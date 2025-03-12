@@ -2,11 +2,11 @@ package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.model.DExchange;
 import com.example.aadbackspring.service.DExchangeService;
+import com.example.aadbackspring.service.DexApiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.OffsetDateTime;
 import java.util.*;
 
 @RestController
@@ -14,9 +14,12 @@ import java.util.*;
 public class DExchangeController {
 
     private final DExchangeService service;
+    private final DexApiService dexApiService;
 
-    public DExchangeController(DExchangeService service) {
+    // Inject both the local service and the new API service
+    public DExchangeController(DExchangeService service, DexApiService dexApiService) {
         this.service = service;
+        this.dexApiService = dexApiService;
     }
 
     @PostMapping
@@ -32,7 +35,7 @@ public class DExchangeController {
 
     @GetMapping
     public ResponseEntity<List<DExchange>> getAllDExchanges() {
-        List<DExchange> exchanges = service.getAllDExchanges();
+        List<DExchange> exchanges = dexApiService.getDexListings();
         return ResponseEntity.ok(exchanges);
     }
 
@@ -57,7 +60,6 @@ public class DExchangeController {
         }
     }
 
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDExchange(@PathVariable Long id) {
         boolean deleted = service.deleteDExchange(id);
@@ -67,21 +69,5 @@ public class DExchangeController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Collections.singletonMap("error", "DExchange not found"));
         }
-    }
-
-    // This endpoint simulates the external DExchange API response structure.
-    @GetMapping("/test-api")
-    public ResponseEntity<?> getTestApiResponse() {
-        List<DExchange> exchanges = service.getAllDExchanges();
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", exchanges);
-        Map<String, Object> status = new HashMap<>();
-        status.put("timestamp", OffsetDateTime.now().toString());
-        status.put("error_code", "0");
-        status.put("error_message", "");
-        status.put("elapsed", 45);
-        status.put("credit_count", 50);
-        response.put("status", status);
-        return ResponseEntity.ok(response);
     }
 }

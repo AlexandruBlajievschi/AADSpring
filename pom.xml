@@ -62,6 +62,14 @@
             <version>0.9.1</version>
         </dependency>
 
+        <!-- Resilience4j -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot2</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
+
         <!-- Google JSON -->
         <dependency>
             <groupId>com.google.http-client</groupId>
