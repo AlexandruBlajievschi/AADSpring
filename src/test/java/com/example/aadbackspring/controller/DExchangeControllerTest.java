@@ -95,7 +95,7 @@ public class DExchangeControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name", is("Raydium")))
                 .andExpect(jsonPath("$.slug", is("raydium")))
-                .andExpect(jsonPath("$.externalId", is(1342)));
+                .andExpect(jsonPath("$.id", is(1342)));
     }
 
     // ----- GET ALL -----
@@ -112,7 +112,7 @@ public class DExchangeControllerTest {
         mockMvc.perform(get("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Uniswap v3 (Ethereum)")))
-                .andExpect(jsonPath("$.externalId", is(1348)));
+                .andExpect(jsonPath("$.id", is(1348)));
     }
 
     @Test
@@ -150,7 +150,7 @@ public class DExchangeControllerTest {
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Uniswap v3 (Ethereum) Updated")))
-                .andExpect(jsonPath("$.numMarketPairs", is("940")));
+                .andExpect(jsonPath("$.num_market_pairs", is("940")));
     }
 
     @Test
