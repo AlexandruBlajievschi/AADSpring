@@ -11,7 +11,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import java.util.List;
 
 @Service
-public class DexApiService {
+public class DExApiService {
 
     private static final String DEX_API_URL = "https://pro-api.coinmarketcap.com/v4/dex/listings/quotes";
     private static final String CMC_API_KEY = "bab4713c-03bd-4f18-b7f1-ea27196f7cb7";
@@ -20,7 +20,7 @@ public class DexApiService {
     private final DExchangeService dexExchangeService; // for fallback
 
     @Autowired
-    public DexApiService(RestTemplateBuilder builder, DExchangeService dexExchangeService) {
+    public DExApiService(RestTemplateBuilder builder, DExchangeService dexExchangeService) {
         this.restTemplate = builder.build();
         this.dexExchangeService = dexExchangeService;
     }

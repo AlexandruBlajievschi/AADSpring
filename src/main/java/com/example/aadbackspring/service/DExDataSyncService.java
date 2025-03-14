@@ -8,12 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-public class DexDataSyncService {
+public class DExDataSyncService {
 
-    private final DexApiService dexApiService;
+    private final DExApiService dexApiService;
     private final DExchangeService dexExchangeService;
 
-    public DexDataSyncService(DexApiService dexApiService, DExchangeService dexExchangeService) {
+    public DExDataSyncService(DExApiService dexApiService, DExchangeService dexExchangeService) {
         this.dexApiService = dexApiService;
         this.dexExchangeService = dexExchangeService;
     }

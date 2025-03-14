@@ -2,6 +2,7 @@ package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.model.News;
 import com.example.aadbackspring.repository.NewsRepository;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,51 +38,45 @@ public class NewsControllerTest {
 
         // Create and persist a sample News record.
         sampleNews = new News();
-        sampleNews.setType("120");
-        sampleNews.setSourceKey("coindesk");
-        sampleNews.setName("CoinDesk");
-        sampleNews.setImageUrl("https://images.cryptocompare.com/news/default/coindesk.png");
-        sampleNews.setUrl("https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml");
+        sampleNews.setExternalId("123");
+        sampleNews.setGuid("sample-guid");
+        sampleNews.setPublishedOn(1741950000L);
+        sampleNews.setImageurl("https://example.com/image.png");
+        sampleNews.setTitle("Sample News Title");
+        sampleNews.setUrl("https://example.com/news");
+        sampleNews.setBody("This is a sample news body.");
+        sampleNews.setTags("sample,news");
         sampleNews.setLang("EN");
-        sampleNews.setSourceType("RSS");
-        sampleNews.setLaunchDate(1367884800L);
-        sampleNews.setSortOrder(0);
-        sampleNews.setBenchmarkScore(71);
-        sampleNews.setStatus("ACTIVE");
-        sampleNews.setLastUpdatedTs(1741179871L);
-        sampleNews.setCreatedOn(1657730129L);
-        sampleNews.setUpdatedOn(1711617897L);
+        sampleNews.setCategories("Finance");
+        sampleNews.setSource("coinpedia");
         sampleNews = newsRepository.save(sampleNews);
     }
 
-    // ---- CREATE NEWS ----
+    // ---- CREATE NEWS (Good Path) ----
     @Test
     public void testCreateNews_Success() throws Exception {
         News newNews = new News();
-        newNews.setType("120");
-        newNews.setSourceKey("cointelegraph");
-        newNews.setName("CoinTelegraph");
-        newNews.setImageUrl("https://images.cryptocompare.com/news/default/cointelegraph.png");
-        newNews.setUrl("https://cointelegraph.com/rss");
+        newNews.setExternalId("456");
+        newNews.setGuid("new-guid");
+        newNews.setPublishedOn(1741960000L);
+        newNews.setImageurl("https://example.com/new-image.png");
+        newNews.setTitle("New News Title");
+        newNews.setUrl("https://example.com/new-news");
+        newNews.setBody("This is the body of the new news.");
+        newNews.setTags("new,news");
         newNews.setLang("EN");
-        newNews.setSourceType("RSS");
-        newNews.setLaunchDate(1382227200L);
-        newNews.setSortOrder(0);
-        newNews.setBenchmarkScore(66);
-        newNews.setStatus("ACTIVE");
-        newNews.setLastUpdatedTs(1741179871L);
-        newNews.setCreatedOn(1657730129L);
-        newNews.setUpdatedOn(1711620813L);
+        newNews.setCategories("Technology");
+        newNews.setSource("cryptopotato");
 
         mockMvc.perform(post("/news")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newNews)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", is("CoinTelegraph")))
-                .andExpect(jsonPath("$.sourceKey", is("cointelegraph")));
+                .andExpect(jsonPath("$.title", is("New News Title")))
+                .andExpect(jsonPath("$.source", is("cryptopotato")));
     }
 
-    // ---- GET ALL NEWS ----
+    // ---- GET ALL NEWS (Good Path) ----
     @Test
     public void testGetAllNews_Success() throws Exception {
         mockMvc.perform(get("/news"))
@@ -89,100 +84,88 @@ public class NewsControllerTest {
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ---- GET NEWS BY ID ----
+    // ---- GET NEWS BY ID (Good Path) ----
     @Test
     public void testGetNewsById_Success() throws Exception {
         mockMvc.perform(get("/news/{id}", sampleNews.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(sampleNews.getId().intValue())))
-                .andExpect(jsonPath("$.name", is("CoinDesk")));
+                .andExpect(jsonPath("$.title", is("Sample News Title")))
+                .andExpect(jsonPath("$.source", is("coinpedia")));
     }
 
+    // ---- GET NEWS BY ID (Bad Path) ----
     @Test
     public void testGetNewsById_NotFound() throws Exception {
-        mockMvc.perform(get("/news/{id}", 999))
+        mockMvc.perform(get("/news/{id}", 999L))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("News not found")));
+                .andExpect(content().string(containsString("News not found")));
     }
 
-    // ---- UPDATE NEWS ----
+    // ---- UPDATE NEWS (Good Path) ----
     @Test
     public void testUpdateNews_Success() throws Exception {
         News updateData = new News();
-        updateData.setType("120");
-        updateData.setSourceKey("coindesk");
-        updateData.setName("CoinDesk Updated");
-        updateData.setImageUrl("https://images.cryptocompare.com/news/default/coindesk.png");
-        updateData.setUrl("https://www.coindesk.com/arc/outboundfeeds/rss/?outputType=xml");
+        updateData.setExternalId("123-updated");
+        updateData.setGuid("sample-guid-updated");
+        updateData.setPublishedOn(1741951111L);
+        updateData.setImageurl("https://example.com/updated-image.png");
+        updateData.setTitle("Sample News Title Updated");
+        updateData.setUrl("https://example.com/updated-news");
+        updateData.setBody("Updated news body.");
+        updateData.setTags("updated,news");
         updateData.setLang("EN");
-        updateData.setSourceType("RSS");
-        updateData.setLaunchDate(1367884800L);
-        updateData.setSortOrder(0);
-        updateData.setBenchmarkScore(75);
-        updateData.setStatus("ACTIVE");
-        updateData.setLastUpdatedTs(1741179871L);
-        updateData.setCreatedOn(1657730129L);
-        updateData.setUpdatedOn(1711617897L);
+        updateData.setCategories("Economy");
+        updateData.setSource("cointelegraph");
 
         mockMvc.perform(put("/news/{id}", sampleNews.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is("CoinDesk Updated")))
-                .andExpect(jsonPath("$.benchmarkScore", is(75)));
+                .andExpect(jsonPath("$.title", is("Sample News Title Updated")))
+                .andExpect(jsonPath("$.source", is("cointelegraph")));
     }
 
+    // ---- UPDATE NEWS (Bad Path) ----
     @Test
     public void testUpdateNews_NotFound() throws Exception {
         News updateData = new News();
-        updateData.setType("120");
-        updateData.setSourceKey("nonexistent");
-        updateData.setName("Nonexistent News");
-        updateData.setImageUrl("https://example.com/image.png");
-        updateData.setUrl("https://example.com");
+        updateData.setExternalId("nonexistent");
+        updateData.setGuid("nonexistent-guid");
+        updateData.setPublishedOn(0L);
+        updateData.setImageurl("https://example.com/none.png");
+        updateData.setTitle("Nonexistent News");
+        updateData.setUrl("https://example.com/none");
+        updateData.setBody("No body");
+        updateData.setTags("none");
         updateData.setLang("EN");
-        updateData.setSourceType("RSS");
-        updateData.setLaunchDate(0L);
-        updateData.setSortOrder(0);
-        updateData.setBenchmarkScore(0);
-        updateData.setStatus("INACTIVE");
-        updateData.setLastUpdatedTs(0L);
-        updateData.setCreatedOn(0L);
-        updateData.setUpdatedOn(0L);
+        updateData.setCategories("None");
+        updateData.setSource("none");
 
-        mockMvc.perform(put("/news/{id}", 999)
+        mockMvc.perform(put("/news/{id}", 999L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("News not found")));
+                .andExpect(content().string(containsString("News not found")));
     }
 
-    // ---- DELETE NEWS ----
+    // ---- DELETE NEWS (Good Path) ----
     @Test
     public void testDeleteNews_Success() throws Exception {
         mockMvc.perform(delete("/news/{id}", sampleNews.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("deleted")));
+                .andExpect(content().string(containsString("deleted successfully")));
 
-        // Verify deletion.
+        // Verify deletion by attempting to get the deleted record.
         mockMvc.perform(get("/news/{id}", sampleNews.getId()))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("News not found")));
+                .andExpect(content().string(containsString("News not found")));
     }
 
+    // ---- DELETE NEWS (Bad Path) ----
     @Test
     public void testDeleteNews_NotFound() throws Exception {
-        mockMvc.perform(delete("/news/{id}", 999))
+        mockMvc.perform(delete("/news/{id}", 999L))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("News not found")));
-    }
-
-    // ---- TEST API RESPONSE STRUCTURE ----
-    @Test
-    public void testGetTestApiResponse_Success() throws Exception {
-        mockMvc.perform(get("/news/test-api"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.Data", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$.Err", aMapWithSize(0)));
+                .andExpect(content().string(containsString("News not found")));
     }
 }

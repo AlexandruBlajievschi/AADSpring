@@ -2,7 +2,7 @@ package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.model.DExchange;
 import com.example.aadbackspring.service.DExchangeService;
-import com.example.aadbackspring.service.DexApiService;
+import com.example.aadbackspring.service.DExApiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +14,10 @@ import java.util.*;
 public class DExchangeController {
 
     private final DExchangeService service;
-    private final DexApiService dexApiService;
+    private final DExApiService dexApiService;
 
     // Inject both the local service and the new API service
-    public DExchangeController(DExchangeService service, DexApiService dexApiService) {
+    public DExchangeController(DExchangeService service, DExApiService dexApiService) {
         this.service = service;
         this.dexApiService = dexApiService;
     }

@@ -1,59 +1,46 @@
 package com.example.aadbackspring.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "news")
 public class News {
 
+    // This is your internal database id.
+    // We ignore it in JSON to avoid conflict with external id.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;  // Internal primary key
+    private Long id;
 
-    @Column(nullable = false, length = 10)
-    private String type;
+    // Map external "id" from JSON to this field.
+    @JsonProperty("id")
+    private String externalId;
 
-    @Column(name = "source_key", nullable = false, unique = true, length = 50)
-    private String sourceKey;
+    private String guid;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+    // Map "published_on" from JSON to this field.
+    @JsonProperty("published_on")
+    private Long publishedOn;
 
-    @Column(name = "image_url", length = 255)
-    private String imageUrl;
+    private String imageurl;
+    private String title;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String url;
 
-    @Column(length = 10)
+    @Column(columnDefinition = "TEXT")
+    private String body;
+
+    private String tags;
     private String lang;
-
-    @Column(name = "source_type", length = 50)
-    private String sourceType;
-
-    @Column(name = "launch_date")
-    private Long launchDate;
-
-    @Column(name = "sort_order")
-    private Integer sortOrder;
-
-    @Column(name = "benchmark_score")
-    private Integer benchmarkScore;
-
-    @Column(length = 20)
-    private String status;
-
-    @Column(name = "last_updated_ts")
-    private Long lastUpdatedTs;
-
-    @Column(name = "created_on")
-    private Long createdOn;
-
-    @Column(name = "updated_on")
-    private Long updatedOn;
+    private String categories;
+    private String source;
 
     // Getters and setters
 
+    @JsonIgnore  // Ignore the internal database id when serializing/deserializing
     public Long getId() {
         return id;
     }
@@ -61,37 +48,51 @@ public class News {
     public void setId(Long id) {
         this.id = id;
     }
-
-    public String getType() {
-        return type;
+    public String getSource() {
+        return source;
+    }
+    public void setSource(String source) {
+        this.source = source;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public String getExternalId() {
+        return externalId;
     }
 
-    public String getSourceKey() {
-        return sourceKey;
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
     }
 
-    public void setSourceKey(String sourceKey) {
-        this.sourceKey = sourceKey;
+    public String getGuid() {
+        return guid;
     }
 
-    public String getName() {
-        return name;
+    public void setGuid(String guid) {
+        this.guid = guid;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public Long getPublishedOn() {
+        return publishedOn;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
+    public void setPublishedOn(Long publishedOn) {
+        this.publishedOn = publishedOn;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public String getImageurl() {
+        return imageurl;
+    }
+
+    public void setImageurl(String imageurl) {
+        this.imageurl = imageurl;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getUrl() {
@@ -102,6 +103,22 @@ public class News {
         this.url = url;
     }
 
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
     public String getLang() {
         return lang;
     }
@@ -110,67 +127,11 @@ public class News {
         this.lang = lang;
     }
 
-    public String getSourceType() {
-        return sourceType;
+    public String getCategories() {
+        return categories;
     }
 
-    public void setSourceType(String sourceType) {
-        this.sourceType = sourceType;
-    }
-
-    public Long getLaunchDate() {
-        return launchDate;
-    }
-
-    public void setLaunchDate(Long launchDate) {
-        this.launchDate = launchDate;
-    }
-
-    public Integer getSortOrder() {
-        return sortOrder;
-    }
-
-    public void setSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public Integer getBenchmarkScore() {
-        return benchmarkScore;
-    }
-
-    public void setBenchmarkScore(Integer benchmarkScore) {
-        this.benchmarkScore = benchmarkScore;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Long getLastUpdatedTs() {
-        return lastUpdatedTs;
-    }
-
-    public void setLastUpdatedTs(Long lastUpdatedTs) {
-        this.lastUpdatedTs = lastUpdatedTs;
-    }
-
-    public Long getCreatedOn() {
-        return createdOn;
-    }
-
-    public void setCreatedOn(Long createdOn) {
-        this.createdOn = createdOn;
-    }
-
-    public Long getUpdatedOn() {
-        return updatedOn;
-    }
-
-    public void setUpdatedOn(Long updatedOn) {
-        this.updatedOn = updatedOn;
+    public void setCategories(String categories) {
+        this.categories = categories;
     }
 }
