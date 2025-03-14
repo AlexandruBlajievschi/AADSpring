@@ -8,19 +8,18 @@ import jakarta.persistence.*;
 @Table(name = "news")
 public class News {
 
-    // This is your internal database id.
-    // We ignore it in JSON to avoid conflict with external id.
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Map external "id" from JSON to this field.
+    // Increase length or use TEXT for externalId if needed
     @JsonProperty("id")
+    @Column(length = 512)
     private String externalId;
 
+    @Column(length = 1024)  // GUIDs can be long URLs with parameters.
     private String guid;
 
-    // Map "published_on" from JSON to this field.
     @JsonProperty("published_on")
     private Long publishedOn;
 
@@ -33,9 +32,15 @@ public class News {
     @Column(columnDefinition = "TEXT")
     private String body;
 
+    @Column(length = 1024) // In case tags are concatenated or very descriptive.
     private String tags;
+
     private String lang;
+
+    @Column(length = 1024) // To allow more categories if needed.
     private String categories;
+
+    @Column(length = 1024) // In case the source name or details become longer.
     private String source;
 
     // Getters and setters

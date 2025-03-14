@@ -4,7 +4,8 @@ import com.example.aadbackspring.dto.NewsApiResponseDTO;
 import com.example.aadbackspring.exception.ResourceNotFoundException;
 import com.example.aadbackspring.model.News;
 import com.example.aadbackspring.repository.NewsRepository;
-import java.util.List;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @Service
 public class NewsService {
@@ -31,21 +34,41 @@ public class NewsService {
     }
 
     /**
-     * Returns news from the external API.
-     * If the external API call fails, returns the local news from the database.
+     * Calls the external News API and returns a list of News.
+     * If the external API call fails or returns no data, a ResourceNotFoundException is thrown.
+     */
+    @CircuitBreaker(name = "cryptocompare", fallbackMethod = "newsApiFallback")
+    public List<News> getNewsFromExternal() {
+        ResponseEntity<NewsApiResponseDTO> response = restTemplate.getForEntity(externalNewsApiUrl, NewsApiResponseDTO.class);
+        if (response.getStatusCode().is2xxSuccessful() &&
+                response.getBody() != null &&
+                response.getBody().getData() != null) {
+            return response.getBody().getData();
+        } else {
+            throw new ResourceNotFoundException("External News API resource not found");
+        }
+    }
+
+    /**
+     * Fallback method for the circuit breaker.
+     * Logs the error and returns local data from the repository.
+     */
+    public List<News> newsApiFallback(Throwable t) {
+        logger.error("External News API call failed: {}", t.getMessage());
+        return newsRepository.findAll();
+    }
+
+    /**
+     * Unified method that attempts to fetch news from the external API.
+     * If that fails, it falls back to local repository data.
      */
     public List<News> getNews() {
         try {
-            ResponseEntity<NewsApiResponseDTO> response = restTemplate.getForEntity(externalNewsApiUrl, NewsApiResponseDTO.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().getData() != null) {
-                return response.getBody().getData();
-            } else {
-                logger.error("External API returned non-successful response or empty body. Falling back to local news.");
-            }
-        } catch (Exception e) {
-            logger.error("Error calling external news API: {}. Falling back to local news.", e.getMessage());
+            return getNewsFromExternal();
+        } catch (Exception ex) {
+            logger.warn("Falling back to local news: {}", ex.getMessage());
+            return newsRepository.findAll();
         }
-        return newsRepository.findAll();
     }
 
     // ---------------------------
@@ -84,22 +107,18 @@ public class NewsService {
 
     /**
      * Scheduled task that runs once a day (at midnight) to update local news.
-     * Adjust the cron expression as needed.
+     * The task is marked as @Transactional to ensure data consistency.
      */
     @Scheduled(cron = "0 * * * * ?")
+    @Transactional
     public void updateLocalNews() {
         try {
             logger.info("Running scheduled task to update local news.");
-            ResponseEntity<NewsApiResponseDTO> response = restTemplate.getForEntity(externalNewsApiUrl, NewsApiResponseDTO.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().getData() != null) {
-                List<News> externalNews = response.getBody().getData();
-                // Optionally clear old news:
-                newsRepository.deleteAll();
-                newsRepository.saveAll(externalNews);
-                logger.info("Local news updated successfully with {} records.", externalNews.size());
-            } else {
-                logger.error("Scheduled update: External API returned non-successful response or empty body.");
-            }
+            List<News> externalNews = getNewsFromExternal();
+            // Optionally clear old news:
+            newsRepository.deleteAll();
+            newsRepository.saveAll(externalNews);
+            logger.info("Local news updated successfully with {} records.", externalNews.size());
         } catch (Exception e) {
             logger.error("Scheduled update failed: {}", e.getMessage());
         }
