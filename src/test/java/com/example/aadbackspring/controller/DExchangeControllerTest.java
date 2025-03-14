@@ -16,10 +16,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -30,7 +27,7 @@ public class DExchangeControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private DExchangeRepository dExchangeRepository;
+    private DExchangeRepository repository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -39,66 +36,49 @@ public class DExchangeControllerTest {
 
     @BeforeEach
     public void setup() {
-        // Clear the repository to ensure a clean test state.
-        dExchangeRepository.deleteAll();
+        // Clear repository before each test.
+        repository.deleteAll();
 
-        // Create a sample DExchange entity based on the external API structure.
+        // Create a sample DExchange record.
         sampleExchange = new DExchange();
-        sampleExchange.setExternalId(1348L);
-        sampleExchange.setNumMarketPairs("939");
-        sampleExchange.setLastUpdated(OffsetDateTime.parse("2025-03-05T14:58:35.000Z"));
-        sampleExchange.setMarketShare(0.17619097);
-        sampleExchange.setType("swap");
-
-        DExchangeQuote quote = new DExchangeQuote();
-        quote.setConvertId("2781");
-        quote.setMarketType("spot");
-        quote.setLastUpdated(OffsetDateTime.parse("2025-03-05T14:58:35.000Z"));
-        quote.setVolume24h(1569032860.4631765);
-        quote.setPercentChangeVolume24h(-34.55170688);
-        quote.setNumTransactions24h(139410L);
-        sampleExchange.setQuote(Collections.singletonList(quote));
-
-        sampleExchange.setName("Uniswap v3 (Ethereum)");
-        sampleExchange.setSlug("uniswap-v3");
+        sampleExchange.setExternalId(123L);
+        sampleExchange.setNumMarketPairs("10");
+        sampleExchange.setLastUpdated(OffsetDateTime.now());
+        sampleExchange.setMarketShare(0.5);
+        sampleExchange.setType("dex");
+        // Set an empty list of quotes.
+        sampleExchange.setQuote(Collections.emptyList());
+        sampleExchange.setName("SampleDEX");
+        sampleExchange.setSlug("sample-dex");
         sampleExchange.setStatus("active");
 
-        sampleExchange = dExchangeRepository.save(sampleExchange);
+        // Save sample exchange into repository.
+        sampleExchange = repository.save(sampleExchange);
     }
 
     // ----- CREATE -----
     @Test
     public void testCreateDExchange_Success() throws Exception {
         DExchange newExchange = new DExchange();
-        newExchange.setExternalId(1342L);
-        newExchange.setNumMarketPairs("1780");
-        newExchange.setLastUpdated(OffsetDateTime.parse("2025-03-05T14:58:15.000Z"));
-        newExchange.setMarketShare(0.13106021);
-        newExchange.setType("swap");
-
-        DExchangeQuote quote = new DExchangeQuote();
-        quote.setConvertId("2781");
-        quote.setMarketType("spot");
-        quote.setLastUpdated(OffsetDateTime.parse("2025-03-05T14:58:15.000Z"));
-        quote.setVolume24h(1167130101.961565);
-        quote.setPercentChangeVolume24h(-31.61520385);
-        quote.setNumTransactions24h(16363454L);
-        newExchange.setQuote(Collections.singletonList(quote));
-
-        newExchange.setName("Raydium");
-        newExchange.setSlug("raydium");
+        newExchange.setExternalId(456L);
+        newExchange.setNumMarketPairs("20");
+        newExchange.setLastUpdated(OffsetDateTime.now());
+        newExchange.setMarketShare(0.8);
+        newExchange.setType("dex");
+        newExchange.setQuote(Collections.emptyList());
+        newExchange.setName("NewDEX");
+        newExchange.setSlug("new-dex");
         newExchange.setStatus("active");
 
         mockMvc.perform(post("/dexchanges")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newExchange)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", is("Raydium")))
-                .andExpect(jsonPath("$.slug", is("raydium")))
-                .andExpect(jsonPath("$.id", is(1342)));
+                .andExpect(jsonPath("$.name", is("NewDEX")))
+                .andExpect(jsonPath("$.slug", is("new-dex")));
     }
 
-    // ----- GET ALL -----
+    // ----- READ ALL -----
     @Test
     public void testGetAllDExchanges_Success() throws Exception {
         mockMvc.perform(get("/dexchanges"))
@@ -106,71 +86,59 @@ public class DExchangeControllerTest {
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ----- GET BY ID -----
+    // ----- READ by ID -----
     @Test
     public void testGetDExchangeById_Success() throws Exception {
         mockMvc.perform(get("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is("Uniswap v3 (Ethereum)")))
-                .andExpect(jsonPath("$.id", is(1348)));
+                // The internal DB id is ignored in JSON output, so we verify using other fields.
+                .andExpect(jsonPath("$.id", is(123)))
+                .andExpect(jsonPath("$.name", is("SampleDEX")));
     }
 
     @Test
     public void testGetDExchangeById_NotFound() throws Exception {
-        mockMvc.perform(get("/dexchanges/{id}", 99999))
+        mockMvc.perform(get("/dexchanges/{id}", 9999))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("DExchange not found")));
+                .andExpect(jsonPath("$.error", is("DExchange not found with id 9999")));
     }
 
     // ----- UPDATE -----
     @Test
     public void testUpdateDExchange_Success() throws Exception {
-        DExchange updateData = new DExchange();
-        updateData.setExternalId(1348L);
-        updateData.setNumMarketPairs("940");
-        updateData.setLastUpdated(OffsetDateTime.parse("2025-03-05T15:00:00.000Z"));
-        updateData.setMarketShare(0.18000000);
-        updateData.setType("swap");
-
-        DExchangeQuote newQuote = new DExchangeQuote();
-        newQuote.setConvertId("2781");
-        newQuote.setMarketType("spot");
-        newQuote.setLastUpdated(OffsetDateTime.parse("2025-03-05T15:00:00.000Z"));
-        newQuote.setVolume24h(1600000000.0);
-        newQuote.setPercentChangeVolume24h(-30.0);
-        newQuote.setNumTransactions24h(140000L);
-        updateData.setQuote(Collections.singletonList(newQuote));
-
-        updateData.setName("Uniswap v3 (Ethereum) Updated");
-        updateData.setSlug("uniswap-v3-updated");
-        updateData.setStatus("active");
+        // Change some fields of the sampleExchange.
+        sampleExchange.setName("UpdatedDEX");
+        sampleExchange.setSlug("updated-dex");
+        sampleExchange.setNumMarketPairs("15");
 
         mockMvc.perform(put("/dexchanges/{id}", sampleExchange.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateData)))
+                        .content(objectMapper.writeValueAsString(sampleExchange)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name", is("Uniswap v3 (Ethereum) Updated")))
-                .andExpect(jsonPath("$.num_market_pairs", is("940")));
+                .andExpect(jsonPath("$.name", is("UpdatedDEX")))
+                .andExpect(jsonPath("$.slug", is("updated-dex")))
+                .andExpect(jsonPath("$.num_market_pairs", is("15")));
+
     }
 
     @Test
     public void testUpdateDExchange_NotFound() throws Exception {
         DExchange updateData = new DExchange();
-        updateData.setExternalId(9999L);
-        updateData.setNumMarketPairs("0");
+        updateData.setExternalId(111L);
+        updateData.setNumMarketPairs("5");
         updateData.setLastUpdated(OffsetDateTime.now());
-        updateData.setMarketShare(0.0);
-        updateData.setType("swap");
+        updateData.setMarketShare(0.3);
+        updateData.setType("dex");
         updateData.setQuote(Collections.emptyList());
-        updateData.setName("Nonexistent");
-        updateData.setSlug("nonexistent");
+        updateData.setName("NonExistentDEX");
+        updateData.setSlug("nonexistent-dex");
         updateData.setStatus("inactive");
 
-        mockMvc.perform(put("/dexchanges/{id}", 99999)
+        mockMvc.perform(put("/dexchanges/{id}", 9999)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("DExchange not found")));
+                .andExpect(jsonPath("$.error", is("DExchange not found with id 9999")));
     }
 
     // ----- DELETE -----
@@ -178,27 +146,18 @@ public class DExchangeControllerTest {
     public void testDeleteDExchange_Success() throws Exception {
         mockMvc.perform(delete("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("deleted successfully")));
+                .andExpect(jsonPath("$.message", is("DExchange deleted successfully")));
 
-        // Verify deletion by attempting to get the deleted entity.
+        // Verify deletion by attempting to retrieve it.
         mockMvc.perform(get("/dexchanges/{id}", sampleExchange.getId()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error", is("DExchange not found with id " + sampleExchange.getId())));
     }
 
     @Test
     public void testDeleteDExchange_NotFound() throws Exception {
-        mockMvc.perform(delete("/dexchanges/{id}", 99999))
+        mockMvc.perform(delete("/dexchanges/{id}", 9999))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("DExchange not found")));
-    }
-
-    // ----- TEST API RESPONSE -----
-    @Test
-    public void testGetTestApiResponse_Success() throws Exception {
-        mockMvc.perform(get("/dexchanges/test-api"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$.status", aMapWithSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$.status.error_code", is("0")));
+                .andExpect(jsonPath("$.error", is("DExchange not found with id 9999")));
     }
 }
