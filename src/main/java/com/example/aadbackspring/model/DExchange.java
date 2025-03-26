@@ -4,11 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "dexchanges")
+@Getter
+@Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DExchange {
 
@@ -42,76 +47,4 @@ public class DExchange {
     private String name;
     private String slug;
     private String status;
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getExternalId() {
-        return externalId;
-    }
-    public void setExternalId(Long externalId) {
-        this.externalId = externalId;
-    }
-
-    public String getNumMarketPairs() {
-        return numMarketPairs;
-    }
-    public void setNumMarketPairs(String numMarketPairs) {
-        this.numMarketPairs = numMarketPairs;
-    }
-
-    public OffsetDateTime getLastUpdated() {
-        return lastUpdated;
-    }
-    public void setLastUpdated(OffsetDateTime lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
-
-    public Double getMarketShare() {
-        return marketShare;
-    }
-    public void setMarketShare(Double marketShare) {
-        this.marketShare = marketShare;
-    }
-
-    public String getType() {
-        return type;
-    }
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public List<DExchangeQuote> getQuote() {
-        return quote;
-    }
-    public void setQuote(List<DExchangeQuote> quote) {
-        this.quote = quote;
-    }
-
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getSlug() {
-        return slug;
-    }
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-    public void setStatus(String status) {
-        this.status = status;
-    }
 }
