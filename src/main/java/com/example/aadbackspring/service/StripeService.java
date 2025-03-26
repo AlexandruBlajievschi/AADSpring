@@ -1,23 +1,25 @@
 package com.example.aadbackspring.service;
 
-import com.example.aadbackspring.exception.UserNotFoundException;
+import com.example.aadbackspring.dto.PaymentSheetRequestDTO;
+import com.example.aadbackspring.exception.ResourceAlreadyExistsException;
 import com.example.aadbackspring.model.User;
-import com.example.aadbackspring.model.stripe.StripeSubscriptionResponse;
 import com.example.aadbackspring.model.stripe.SubscriptionPlan;
 import com.example.aadbackspring.model.stripe.UserSubscription;
-import com.example.aadbackspring.model.stripe.SubscriptionRequestDto;
 import com.example.aadbackspring.repository.stripe.SubscriptionPlanRepository;
 import com.example.aadbackspring.repository.UserRepository;
 import com.example.aadbackspring.repository.stripe.UserSubscriptionRepository;
 import com.stripe.Stripe;
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.*;
+import com.stripe.net.RequestOptions;
+import com.stripe.net.Webhook;
+import com.stripe.param.EphemeralKeyCreateParams;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.*;
-import java.util.logging.Logger;
 
 @Service
 public class StripeService {
@@ -25,106 +27,44 @@ public class StripeService {
     @Value("${stripe.secret-key}")
     private String stripeSecretKey;
 
+    @Value("${stripe.webhook.secret}")
+    private String endpointSecret;
+
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private static final String STRIPE_API_VERSION = "2025-02-24.acacia";
 
     public StripeService(@Value("${stripe.secret-key}") String stripeSecretKey,
-                         UserRepository userRepository, SubscriptionPlanRepository subscriptionPlanRepository, UserSubscriptionRepository userSubscriptionRepository) {
+                         UserRepository userRepository,
+                         SubscriptionPlanRepository subscriptionPlanRepository,
+                         UserSubscriptionRepository userSubscriptionRepository) {
         this.stripeSecretKey = stripeSecretKey;
         this.userRepository = userRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.userSubscriptionRepository = userSubscriptionRepository;
-        // For all server-side calls we use the secret key.
         Stripe.apiKey = stripeSecretKey;
     }
 
-    public StripeSubscriptionResponse createSubscription(SubscriptionRequestDto subscriptionRequest) {
-        // 0. Check for existing user in the database.
-        Optional<User> userEmail = userRepository.findByEmail(subscriptionRequest.getEmail());
-        Optional<User> userUsername = userRepository.findByUsername(subscriptionRequest.getUsername());
+    public Map<String, String> createPaymentSheet(PaymentSheetRequestDTO request) throws StripeException {
+        User user = getUserByEmail(request.getEmail());
+        String stripeCustomerId = ensureStripeCustomer(user);
 
-        if (userEmail.isEmpty() || userUsername.isEmpty()) {
-            throw new UserNotFoundException("Your email or username is incorrect, please verify them and try again.");
+        if (hasActiveSubscription(stripeCustomerId)) {
+            throw new ResourceAlreadyExistsException("You already have an active subscription.");
         }
 
-        User user = userUsername.get();
+        Subscription subscription = createStripeSubscription(stripeCustomerId, request);
+        PaymentIntent paymentIntent = extractPaymentIntent(subscription);
+        EphemeralKey ephemeralKey = createEphemeralKey(stripeCustomerId);
+        persistUserSubscription(user, request.getPriceId(), subscription);
+        return buildPaymentSheetResponse(paymentIntent, ephemeralKey, stripeCustomerId);
+    }
 
-        // Look up the subscription plan based on the provided priceId.
-        Optional<SubscriptionPlan> optPlan = subscriptionPlanRepository.findByPriceId(subscriptionRequest.getPriceId());
-        if (optPlan.isEmpty()) {
-            throw new RuntimeException("Subscription plan not found for priceId: " + subscriptionRequest.getPriceId());
-        }
-        SubscriptionPlan plan = optPlan.get();
-
-        // Check if the user already has an active subscription of that plan.
-        Optional<UserSubscription> existingSubscription =
-                userSubscriptionRepository.findByUserAndSubscriptionPlanAndStatus(user, plan, "active");
-        if (existingSubscription.isPresent()) {
-            throw new RuntimeException("You already have an active subscription for this plan.");
-        }
-
-        try {
-            // 1. Create a Customer using the email and username provided by the client.
-            Map<String, Object> customerParams = new HashMap<>();
-            customerParams.put("email", subscriptionRequest.getEmail());
-            customerParams.put("name", subscriptionRequest.getUsername());
-            customerParams.put("payment_method", subscriptionRequest.getPaymentMethodId());
-            Customer customer = Customer.create(customerParams);
-
-            // 2. Attach the PaymentMethod to the Customer.
-            PaymentMethod paymentMethod = PaymentMethod.retrieve(subscriptionRequest.getPaymentMethodId());
-            Map<String, Object> attachParams = new HashMap<>();
-            attachParams.put("customer", customer.getId());
-            paymentMethod.attach(attachParams);
-
-            // 3. Update the Customer’s invoice settings to set the default payment method.
-            Map<String, Object> invoiceSettings = new HashMap<>();
-            invoiceSettings.put("default_payment_method", subscriptionRequest.getPaymentMethodId());
-            Map<String, Object> customerUpdateParams = new HashMap<>();
-            customerUpdateParams.put("invoice_settings", invoiceSettings);
-            customer = customer.update(customerUpdateParams);
-
-            // 4. Create the Subscription with the provided priceId and quantity.
-            List<Object> items = new ArrayList<>();
-            Map<String, Object> item = new HashMap<>();
-            item.put("price", subscriptionRequest.getPriceId());
-            item.put("quantity", subscriptionRequest.getNumberOfLicenses());
-            items.add(item);
-            Map<String, Object> subscriptionParams = new HashMap<>();
-            subscriptionParams.put("customer", customer.getId());
-            subscriptionParams.put("items", items);
-            subscriptionParams.put("default_payment_method", subscriptionRequest.getPaymentMethodId());
-            Subscription subscription = Subscription.create(subscriptionParams);
-
-            // 5. Save a join record (UserSubscription) in your database.
-            // Look up the subscription plan using the priceId.
-//            Optional<SubscriptionPlan> optPlan = subscriptionPlanRepository.findByPriceId(subscriptionRequest.getPriceId());
-//            if (optPlan.isEmpty()) {
-//                throw new RuntimeException("Subscription plan not found for priceId: " + subscriptionRequest.getPriceId());
-//            }
-//            SubscriptionPlan plan = optPlan.get();
-            UserSubscription userSubscription = new UserSubscription();
-            userSubscription.setUser(user);
-            userSubscription.setSubscriptionPlan(plan);
-            userSubscription.setStripeSubscriptionId(subscription.getId());
-            userSubscription.setStripeCustomerId(customer.getId());
-            userSubscription.setStatus(subscription.getStatus());
-            // Convert epoch seconds from Stripe to Java Instant.
-            userSubscription.setStartDate(Instant.ofEpochSecond(subscription.getCurrentPeriodStart()));
-            userSubscription.setEndDate(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
-            userSubscriptionRepository.save(userSubscription);
-
-            // 6. Build and return the response.
-            StripeSubscriptionResponse response = new StripeSubscriptionResponse();
-            response.setStripeCustomerId(customer.getId());
-            response.setStripeSubscriptionId(subscription.getId());
-            response.setStripePaymentMethodId(subscriptionRequest.getPaymentMethodId());
-            response.setUsername(subscriptionRequest.getUsername());
-            return response;
-        } catch (StripeException e) {
-            throw new RuntimeException("Stripe error: " + e.getMessage(), e);
-        }
+    public ResponseEntity<String> processWebhookEvent(String payload, String sigHeader) {
+        Event event = constructWebhookEvent(payload, sigHeader);
+        dispatchWebhookEvent(event);
+        return ResponseEntity.ok("Success");
     }
 
     public Subscription cancelSubscription(String subscriptionId) {
@@ -132,19 +72,151 @@ public class StripeService {
             Subscription subscription = Subscription.retrieve(subscriptionId);
             Subscription cancelled = subscription.cancel();
 
-            // 1. Find the corresponding UserSubscription record by stripe_subscription_id.
-            Optional<UserSubscription> optUserSubscription = userSubscriptionRepository.findByStripeSubscriptionId(subscriptionId);
-            if (optUserSubscription.isPresent()) {
-                UserSubscription userSubscription = optUserSubscription.get();
-                // 2. Update its status to "canceled" (or "cancel", based on your convention).
-                userSubscription.setStatus(cancelled.getStatus());
-                // Optionally update the endDate if Stripe returns a new value.
-                userSubscription.setEndDate(Instant.ofEpochSecond(cancelled.getCurrentPeriodEnd()));
-                userSubscriptionRepository.save(userSubscription);
-            }
+            userSubscriptionRepository.findByStripeSubscriptionId(subscriptionId).ifPresent(userSub -> {
+                userSub.setStatus(cancelled.getStatus());
+                userSub.setEndDate(Instant.ofEpochSecond(cancelled.getCurrentPeriodEnd()));
+                userSubscriptionRepository.save(userSub);
+            });
             return cancelled;
         } catch (StripeException e) {
             throw new RuntimeException("Failed to cancel subscription: " + e.getMessage(), e);
+        }
+    }
+
+    // -------------------------
+    // Helper Methods for Payment Sheet Creation
+    // -------------------------
+    private User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    }
+
+    private String ensureStripeCustomer(User user) throws StripeException {
+        String stripeCustomerId = user.getStripeCustomerId();
+        if (stripeCustomerId == null || stripeCustomerId.isEmpty()) {
+            Map<String, Object> params = new HashMap<>();
+            params.put("email", user.getEmail());
+            params.put("name", user.getUsername());
+            Customer customer = Customer.create(params);
+            stripeCustomerId = customer.getId();
+            user.setStripeCustomerId(stripeCustomerId);
+            userRepository.save(user);
+        }
+        return stripeCustomerId;
+    }
+
+    private boolean hasActiveSubscription(String stripeCustomerId) {
+        return userSubscriptionRepository.findByStripeCustomerIdAndStatus(stripeCustomerId, "active").isPresent();
+    }
+
+    private Subscription createStripeSubscription(String stripeCustomerId, PaymentSheetRequestDTO request) throws StripeException {
+        Map<String, Object> params = new HashMap<>();
+        params.put("customer", stripeCustomerId);
+        List<Object> items = new ArrayList<>();
+        Map<String, Object> item = new HashMap<>();
+        item.put("price", request.getPriceId());
+        if (request.getQuantity() != null) {
+            item.put("quantity", request.getQuantity());
+        }
+        items.add(item);
+        params.put("items", items);
+        params.put("payment_behavior", "default_incomplete");
+        params.put("expand", List.of("latest_invoice.payment_intent"));
+        return Subscription.create(params);
+    }
+
+    private PaymentIntent extractPaymentIntent(Subscription subscription) throws StripeException {
+        String piObj = subscription.getLatestInvoiceObject().getPaymentIntent();
+        if (piObj != null) {
+            return PaymentIntent.retrieve(piObj);
+        }
+        throw new RuntimeException("Unexpected type for payment intent: " + piObj.getClass().getName());
+    }
+
+    private EphemeralKey createEphemeralKey(String stripeCustomerId) throws StripeException {
+        EphemeralKeyCreateParams params = EphemeralKeyCreateParams.builder()
+                .setCustomer(stripeCustomerId)
+                .setStripeVersion(STRIPE_API_VERSION)
+                .build();
+        return EphemeralKey.create(params, RequestOptions.getDefault());
+    }
+
+    private void persistUserSubscription(User user, String priceId, Subscription subscription) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findByPriceId(priceId)
+                .orElseThrow(() -> new RuntimeException("Subscription plan not found for priceId: " + priceId));
+        UserSubscription userSub = new UserSubscription();
+        userSub.setUser(user);
+        userSub.setSubscriptionPlan(plan);
+        userSub.setStripeSubscriptionId(subscription.getId());
+        userSub.setStripeCustomerId(user.getStripeCustomerId());
+        userSub.setStatus(subscription.getStatus());
+        userSub.setStartDate(Instant.ofEpochSecond(subscription.getCurrentPeriodStart()));
+        userSub.setEndDate(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
+        userSubscriptionRepository.save(userSub);
+    }
+
+    private Map<String, String> buildPaymentSheetResponse(PaymentIntent paymentIntent, EphemeralKey ephemeralKey, String customerId) {
+        Map<String, String> responseData = new HashMap<>();
+        responseData.put("paymentIntent", paymentIntent.getClientSecret());
+        responseData.put("ephemeralKey", ephemeralKey.getSecret());
+        responseData.put("customer", customerId);
+        return responseData;
+    }
+
+    private Map<String, String> errorResponse(String message) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", message);
+        return error;
+    }
+
+    // -------------------------
+    // Helper Methods for Webhook Processing
+    // -------------------------
+    private Event constructWebhookEvent(String payload, String sigHeader) {
+        try {
+            return Webhook.constructEvent(payload, sigHeader, endpointSecret);
+        } catch (SignatureVerificationException e) {
+            throw new RuntimeException("Webhook signature verification failed: " + e.getMessage());
+        }
+    }
+
+    private void dispatchWebhookEvent(Event event) {
+        switch (event.getType()) {
+            case "invoice.payment_succeeded":
+                handleInvoicePaymentSucceeded((Invoice) event.getDataObjectDeserializer().getObject().orElse(null));
+                break;
+            case "customer.subscription.updated":
+                handleSubscriptionUpdated((Subscription) event.getDataObjectDeserializer().getObject().orElse(null));
+                break;
+            default:
+                System.out.println("Unhandled event type: " + event.getType());
+                break;
+        }
+    }
+
+    private void handleInvoicePaymentSucceeded(Invoice invoice) {
+        if (invoice != null && invoice.getSubscription() != null) {
+            String subscriptionId = invoice.getSubscription();
+            userSubscriptionRepository.findByStripeSubscriptionId(subscriptionId).ifPresent(userSub -> {
+                userSub.setStatus("active");
+                userSub.setStartDate(Instant.ofEpochSecond(invoice.getPeriodStart()));
+                userSub.setEndDate(Instant.ofEpochSecond(invoice.getPeriodEnd()));
+                userSubscriptionRepository.save(userSub);
+                System.out.println("Updated subscription " + subscriptionId + " to active");
+            });
+        }
+    }
+
+    private void handleSubscriptionUpdated(Subscription subscription) {
+        if (subscription != null) {
+            String subscriptionId = subscription.getId();
+            userSubscriptionRepository.findByStripeSubscriptionId(subscriptionId).ifPresent(userSub -> {
+                userSub.setStatus(subscription.getStatus());
+                userSub.setStartDate(Instant.ofEpochSecond(subscription.getCurrentPeriodStart()));
+                userSub.setEndDate(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
+                userSubscriptionRepository.save(userSub);
+                System.out.println("Updated subscription " + subscriptionId + " status to " + subscription.getStatus());
+            });
         }
     }
 }

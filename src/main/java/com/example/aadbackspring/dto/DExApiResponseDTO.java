@@ -2,26 +2,17 @@ package com.example.aadbackspring.dto;
 
 
 import com.example.aadbackspring.model.DExchange;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
+@Getter
+@Setter
 public class DExApiResponseDTO {
 
     private List<DExchange> data;
     private Status status;
-
-    // Getters and Setters
-    public List<DExchange> getData() {
-        return data;
-    }
-    public void setData(List<DExchange> data) {
-        this.data = data;
-    }
-    public Status getStatus() {
-        return status;
-    }
-    public void setStatus(Status status) {
-        this.status = status;
-    }
 
     // Nested Status DTO
     public static class Status {

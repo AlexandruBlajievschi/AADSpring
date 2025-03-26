@@ -3,12 +3,16 @@ package com.example.aadbackspring.model;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "categories")
+@Getter
+@Setter
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Category {
 
@@ -27,15 +31,15 @@ public class Category {
     private List<Article> articles = new ArrayList<>();
 
     // Getters and setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public List<Article> getArticles() { return articles; }
-    public void setArticles(List<Article> articles) { this.articles = articles; }
+//    public Long getId() { return id; }
+//    public void setId(Long id) { this.id = id; }
+//
+//    public String getName() { return name; }
+//    public void setName(String name) { this.name = name; }
+//
+//    public String getDescription() { return description; }
+//    public void setDescription(String description) { this.description = description; }
+//
+//    public List<Article> getArticles() { return articles; }
+//    public void setArticles(List<Article> articles) { this.articles = articles; }
 }

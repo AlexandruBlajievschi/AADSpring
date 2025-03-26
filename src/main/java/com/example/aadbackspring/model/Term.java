@@ -2,9 +2,13 @@ package com.example.aadbackspring.model;
 
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "terms")
+@Getter
+@Setter
 public class Term {
 
     @Id
@@ -16,30 +20,4 @@ public class Term {
 
     @Column(nullable = false, columnDefinition = "text")
     private String meaning;
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTerm() {
-        return term;
-    }
-
-    public void setTerm(String term) {
-        this.term = term;
-    }
-
-    public String getMeaning() {
-        return meaning;
-    }
-
-    public void setMeaning(String meaning) {
-        this.meaning = meaning;
-    }
 }

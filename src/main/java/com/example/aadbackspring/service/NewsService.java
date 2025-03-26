@@ -109,7 +109,7 @@ public class NewsService {
      * Scheduled task that runs once a day (at midnight) to update local news.
      * The task is marked as @Transactional to ensure data consistency.
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     @Transactional
     public void updateLocalNews() {
         try {

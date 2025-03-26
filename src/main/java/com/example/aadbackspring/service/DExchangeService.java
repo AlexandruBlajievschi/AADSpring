@@ -136,7 +136,7 @@ public class DExchangeService {
     /**
      * Scheduled task that runs daily at midnight to sync external DEX data into the local database.
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     @Transactional
     public void syncDexData() {
         try {

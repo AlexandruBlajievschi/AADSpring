@@ -43,9 +43,6 @@ public class UserSubscription {
     @Column(name = "end_date")
     private Instant endDate;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
@@ -55,7 +52,6 @@ public class UserSubscription {
     @PrePersist
     public void prePersist() {
         Instant now = Instant.now();
-        createdAt = now;
         updatedAt = now;
     }
 
@@ -63,86 +59,4 @@ public class UserSubscription {
     public void preUpdate() {
         updatedAt = Instant.now();
     }
-
-    // ... Getters and setters ...
-
-//    public Long getId() {
-//        return id;
-//    }
-//
-//    public void setId(Long id) {
-//        this.id = id;
-//    }
-//
-//    public User getUser() {
-//        return user;
-//    }
-//
-//    public void setUser(User user) {
-//        this.user = user;
-//    }
-//
-//    public SubscriptionPlan getSubscriptionPlan() {
-//        return subscriptionPlan;
-//    }
-//
-//    public void setSubscriptionPlan(SubscriptionPlan subscriptionPlan) {
-//        this.subscriptionPlan = subscriptionPlan;
-//    }
-//
-//    public String getStripeSubscriptionId() {
-//        return stripeSubscriptionId;
-//    }
-//
-//    public void setStripeSubscriptionId(String stripeSubscriptionId) {
-//        this.stripeSubscriptionId = stripeSubscriptionId;
-//    }
-//
-//    public String getStripeCustomerId() {
-//        return stripeCustomerId;
-//    }
-//
-//    public void setStripeCustomerId(String stripeCustomerId) {
-//        this.stripeCustomerId = stripeCustomerId;
-//    }
-//
-//    public String getStatus() {
-//        return status;
-//    }
-//
-//    public void setStatus(String status) {
-//        this.status = status;
-//    }
-//
-//    public Instant getStartDate() {
-//        return startDate;
-//    }
-//
-//    public void setStartDate(Instant startDate) {
-//        this.startDate = startDate;
-//    }
-//
-//    public Instant getEndDate() {
-//        return endDate;
-//    }
-//
-//    public void setEndDate(Instant endDate) {
-//        this.endDate = endDate;
-//    }
-//
-//    public Instant getCreatedAt() {
-//        return createdAt;
-//    }
-//
-//    public void setCreatedAt(Instant createdAt) {
-//        this.createdAt = createdAt;
-//    }
-//
-//    public Instant getUpdatedAt() {
-//        return updatedAt;
-//    }
-//
-//    public void setUpdatedAt(Instant updatedAt) {
-//        this.updatedAt = updatedAt;
-//    }
 }
