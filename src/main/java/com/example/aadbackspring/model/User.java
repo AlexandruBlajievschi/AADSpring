@@ -1,8 +1,6 @@
 package com.example.aadbackspring.model;
 
-
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -28,8 +26,11 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "stripe_customer_id")
+    private String stripeCustomerId;
+
     // Getters and Setters
-    // (Alternatively, use Lombok's @Data or @Getter/@Setter annotations)
+
     public Long getId() {
         return id;
     }
@@ -65,5 +66,11 @@ public class User {
     }
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    public String getStripeCustomerId() {
+        return stripeCustomerId;
+    }
+    public void setStripeCustomerId(String stripeCustomerId) {
+        this.stripeCustomerId = stripeCustomerId;
     }
 }

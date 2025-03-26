@@ -127,7 +127,7 @@ public class CoinService {
      * Scheduled task to sync external coin data into the local database.
      * (For testing you might run it every minute; later change it to run daily.)
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     @Transactional
     public void syncCoinData() {
         try {
