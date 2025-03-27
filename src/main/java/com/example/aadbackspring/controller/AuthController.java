@@ -2,6 +2,7 @@ package com.example.aadbackspring.controller;
 
 
 import com.example.aadbackspring.config.JwtTokenUtil;
+import com.example.aadbackspring.config.PasswordEncoderUtil;
 import com.example.aadbackspring.model.User;
 import com.example.aadbackspring.service.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -60,10 +61,11 @@ public class AuthController {
             user = userOptional.get();
         } else {
             user = new User();
+            String encryptedPassword = new PasswordEncoderUtil().encode("SecurePassword2025");
             user.setEmail(email);
             user.setUsername(name);
             // Set a blank or generated password since we rely on Google for auth.
-            user.setPassword("");
+            user.setPassword(encryptedPassword);
             user.setRole("user");
             user = userService.createUser(user);
         }

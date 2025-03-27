@@ -1,5 +1,6 @@
 package com.example.aadbackspring.controller;
 
+import com.example.aadbackspring.config.PasswordEncoderUtil;
 import com.example.aadbackspring.model.User;
 import com.example.aadbackspring.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,15 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 public class UserControllerTest {
 
     @Autowired
@@ -29,19 +30,24 @@ public class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private final PasswordEncoderUtil encoder = new PasswordEncoderUtil();
+
     @BeforeEach
     public void setup() {
         // Clear the repository for a clean state before each test
         userRepository.deleteAll();
     }
 
+    private String encrypted(String rawPassword) {
+        return encoder.encode(rawPassword);
+    }
     // ---- CREATE ----
     @Test
     public void testCreateUser_Success() throws Exception {
         User user = new User();
         user.setUsername("johndoe");
         user.setEmail("johndoe@example.com");
-        user.setPassword("password123");
+        user.setPassword(encrypted("password123"));
         user.setRole("user");
 
         mockMvc.perform(post("/users")
@@ -59,7 +65,7 @@ public class UserControllerTest {
         User user = new User();
         user.setUsername("janedoe");
         user.setEmail("janedoe@example.com");
-        user.setPassword("securePass");
+        user.setPassword(encrypted("securePass"));
         user.setRole("admin");
         userRepository.save(user);
 
@@ -75,7 +81,7 @@ public class UserControllerTest {
         User user = new User();
         user.setUsername("testuser");
         user.setEmail("testuser@example.com");
-        user.setPassword("testPass");
+        user.setPassword(encrypted("testPass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
@@ -101,7 +107,7 @@ public class UserControllerTest {
         User user = new User();
         user.setUsername("oldusername");
         user.setEmail("old@example.com");
-        user.setPassword("oldpass");
+        user.setPassword(encrypted("oldpass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
@@ -109,7 +115,7 @@ public class UserControllerTest {
         User updateData = new User();
         updateData.setUsername("newusername");
         updateData.setEmail("new@example.com");
-        updateData.setPassword("newpass");
+        updateData.setPassword(encrypted("newpass"));
         updateData.setRole("admin");
 
         mockMvc.perform(put("/users/{id}", saved.getId())
@@ -126,7 +132,7 @@ public class UserControllerTest {
         User updateData = new User();
         updateData.setUsername("nonexistent");
         updateData.setEmail("nonexistent@example.com");
-        updateData.setPassword("nopass");
+        updateData.setPassword(encrypted("nopass"));
         updateData.setRole("user");
 
         mockMvc.perform(put("/users/999")
@@ -143,7 +149,7 @@ public class UserControllerTest {
         User user = new User();
         user.setUsername("deleteuser");
         user.setEmail("deleteuser@example.com");
-        user.setPassword("deletepass");
+        user.setPassword(encrypted("deletepass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
