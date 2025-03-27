@@ -39,7 +39,10 @@ public class CoinApiResponseDTO {
     }
 
     // Optionally, include a nested Status class if you need to map status details
+    @Setter
+    @Getter
     public static class Status {
+        // Getters and setters
         private String timestamp;
         @JsonProperty("error_code")
         private String errorCode;
@@ -49,36 +52,5 @@ public class CoinApiResponseDTO {
         @JsonProperty("credit_count")
         private int creditCount;
 
-        // Getters and setters
-        public String getTimestamp() {
-            return timestamp;
-        }
-        public void setTimestamp(String timestamp) {
-            this.timestamp = timestamp;
-        }
-        public String getErrorCode() {
-            return errorCode;
-        }
-        public void setErrorCode(String errorCode) {
-            this.errorCode = errorCode;
-        }
-        public String getErrorMessage() {
-            return errorMessage;
-        }
-        public void setErrorMessage(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
-        public int getElapsed() {
-            return elapsed;
-        }
-        public void setElapsed(int elapsed) {
-            this.elapsed = elapsed;
-        }
-        public int getCreditCount() {
-            return creditCount;
-        }
-        public void setCreditCount(int creditCount) {
-            this.creditCount = creditCount;
-        }
     }
 }

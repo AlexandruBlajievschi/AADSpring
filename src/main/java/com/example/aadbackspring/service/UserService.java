@@ -2,6 +2,7 @@ package com.example.aadbackspring.service;
 
 
 
+import com.example.aadbackspring.config.PasswordEncoderUtil;
 import com.example.aadbackspring.model.User;
 import com.example.aadbackspring.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -41,9 +43,10 @@ public class UserService implements UserDetailsService {
 
     public User updateUser(Long id, User newUserData) {
         return userRepository.findById(id).map(user -> {
+            String encryptedPassword = new PasswordEncoderUtil().encode(newUserData.getPassword());
             user.setUsername(newUserData.getUsername());
             user.setEmail(newUserData.getEmail());
-            user.setPassword(newUserData.getPassword());
+            user.setPassword(encryptedPassword);
             user.setRole(newUserData.getRole());
             return userRepository.save(user);
         }).orElse(null);
