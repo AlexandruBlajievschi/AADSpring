@@ -1,7 +1,6 @@
 package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.model.DExchange;
-import com.example.aadbackspring.model.DExchangeQuote;
 import com.example.aadbackspring.repository.DExchangeRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -17,13 +17,17 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class DExchangeControllerTest {
+@WithMockUser(username = "admin", roles = {"admin"})
+public class DExchangeControllerAdminTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -48,19 +52,18 @@ public class DExchangeControllerTest {
         sampleExchange.setLastUpdated(OffsetDateTime.now());
         sampleExchange.setMarketShare(0.5);
         sampleExchange.setType("dex");
-        // Set an empty list of quotes.
         sampleExchange.setQuote(Collections.emptyList());
         sampleExchange.setName("SampleDEX");
         sampleExchange.setSlug("sample-dex");
         sampleExchange.setStatus("active");
 
-        // Save sample exchange into repository.
+        // Save the sample exchange.
         sampleExchange = repository.save(sampleExchange);
     }
 
     // ----- CREATE -----
     @Test
-    public void testCreateDExchange_Success() throws Exception {
+    public void testCreateDExchange_AsAdmin_Success() throws Exception {
         DExchange newExchange = new DExchange();
         newExchange.setExternalId(456L);
         newExchange.setNumMarketPairs("20");
@@ -82,33 +85,33 @@ public class DExchangeControllerTest {
 
     // ----- READ ALL -----
     @Test
-    public void testGetAllDExchanges_Success() throws Exception {
+    public void testGetAllDExchanges_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/dexchanges"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ----- READ by ID -----
+    // ----- READ BY ID -----
     @Test
-    public void testGetDExchangeById_Success() throws Exception {
+    public void testGetDExchangeById_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isOk())
-                // The internal DB id is ignored in JSON output, so we verify using other fields.
+                // The internal DB id is hidden; the externalId is mapped to "id" in JSON.
                 .andExpect(jsonPath("$.id", is(123)))
                 .andExpect(jsonPath("$.name", is("SampleDEX")));
     }
 
     @Test
-    public void testGetDExchangeById_NotFound() throws Exception {
-        mockMvc.perform(get("/dexchanges/{id}", 9999))
+    public void testGetDExchangeById_AsAdmin_NotFound() throws Exception {
+        mockMvc.perform(get("/dexchanges/{id}", 9999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", is("DExchange not found with id 9999")));
     }
 
     // ----- UPDATE -----
     @Test
-    public void testUpdateDExchange_Success() throws Exception {
-        // Change some fields of the sampleExchange.
+    public void testUpdateDExchange_AsAdmin_Success() throws Exception {
+        // Update some fields.
         sampleExchange.setName("UpdatedDEX");
         sampleExchange.setSlug("updated-dex");
         sampleExchange.setNumMarketPairs("15");
@@ -120,11 +123,10 @@ public class DExchangeControllerTest {
                 .andExpect(jsonPath("$.name", is("UpdatedDEX")))
                 .andExpect(jsonPath("$.slug", is("updated-dex")))
                 .andExpect(jsonPath("$.num_market_pairs", is("15")));
-
     }
 
     @Test
-    public void testUpdateDExchange_NotFound() throws Exception {
+    public void testUpdateDExchange_AsAdmin_NotFound() throws Exception {
         DExchange updateData = new DExchange();
         updateData.setExternalId(111L);
         updateData.setNumMarketPairs("5");
@@ -136,7 +138,7 @@ public class DExchangeControllerTest {
         updateData.setSlug("nonexistent-dex");
         updateData.setStatus("inactive");
 
-        mockMvc.perform(put("/dexchanges/{id}", 9999)
+        mockMvc.perform(put("/dexchanges/{id}", 9999L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
                 .andExpect(status().isNotFound())
@@ -145,20 +147,20 @@ public class DExchangeControllerTest {
 
     // ----- DELETE -----
     @Test
-    public void testDeleteDExchange_Success() throws Exception {
+    public void testDeleteDExchange_AsAdmin_Success() throws Exception {
         mockMvc.perform(delete("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", is("DExchange deleted successfully")));
 
-        // Verify deletion by attempting to retrieve it.
+        // Verify deletion.
         mockMvc.perform(get("/dexchanges/{id}", sampleExchange.getId()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", is("DExchange not found with id " + sampleExchange.getId())));
     }
 
     @Test
-    public void testDeleteDExchange_NotFound() throws Exception {
-        mockMvc.perform(delete("/dexchanges/{id}", 9999))
+    public void testDeleteDExchange_AsAdmin_NotFound() throws Exception {
+        mockMvc.perform(delete("/dexchanges/{id}", 9999L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", is("DExchange not found with id 9999")));
     }

@@ -1,6 +1,5 @@
 package com.example.aadbackspring.controller;
 
-
 import com.example.aadbackspring.model.Article;
 import com.example.aadbackspring.model.Category;
 import com.example.aadbackspring.repository.CategoryRepository;
@@ -11,16 +10,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class CategoryControllerTest {
+@WithMockUser(username = "admin", roles = {"admin"})
+public class CategoryControllerAdminTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,9 +50,9 @@ public class CategoryControllerTest {
         sampleCategory = categoryRepository.save(sampleCategory);
     }
 
-    // ---- CREATE ----
+    // ---- CREATE (Admin Success) ----
     @Test
-    public void testCreateCategory_Success() throws Exception {
+    public void testCreateCategory_AsAdmin_Success() throws Exception {
         Category newCategory = new Category();
         newCategory.setName("Altcoins");
         newCategory.setDescription("Articles about alternative cryptocurrencies.");
@@ -58,17 +65,17 @@ public class CategoryControllerTest {
                 .andExpect(jsonPath("$.description", is("Articles about alternative cryptocurrencies.")));
     }
 
-    // ---- GET ALL ----
+    // ---- GET ALL (Admin Success) ----
     @Test
-    public void testGetAllCategories_Success() throws Exception {
+    public void testGetAllCategories_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ---- GET BY ID ----
+    // ---- GET BY ID (Admin Success) ----
     @Test
-    public void testGetCategoryById_Success() throws Exception {
+    public void testGetCategoryById_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/categories/{id}", sampleCategory.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(sampleCategory.getId().intValue())))
@@ -76,15 +83,15 @@ public class CategoryControllerTest {
     }
 
     @Test
-    public void testGetCategoryById_NotFound() throws Exception {
+    public void testGetCategoryById_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(get("/categories/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", is("Category not found")));
     }
 
-    // ---- UPDATE ----
+    // ---- UPDATE (Admin Success) ----
     @Test
-    public void testUpdateCategory_Success() throws Exception {
+    public void testUpdateCategory_AsAdmin_Success() throws Exception {
         Category updateData = new Category();
         updateData.setName("Test Category Updated");
         updateData.setDescription("Updated description for testing.");
@@ -98,7 +105,7 @@ public class CategoryControllerTest {
     }
 
     @Test
-    public void testUpdateCategory_NotFound() throws Exception {
+    public void testUpdateCategory_AsAdmin_NotFound() throws Exception {
         Category updateData = new Category();
         updateData.setName("Nonexistent");
         updateData.setDescription("Does not exist.");
@@ -110,9 +117,9 @@ public class CategoryControllerTest {
                 .andExpect(jsonPath("$.error", is("Category not found")));
     }
 
-    // ---- DELETE ----
+    // ---- DELETE (Admin Success) ----
     @Test
-    public void testDeleteCategory_Success() throws Exception {
+    public void testDeleteCategory_AsAdmin_Success() throws Exception {
         mockMvc.perform(delete("/categories/{id}", sampleCategory.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", is("Category deleted successfully")));
@@ -123,21 +130,20 @@ public class CategoryControllerTest {
     }
 
     @Test
-    public void testDeleteCategory_NotFound() throws Exception {
+    public void testDeleteCategory_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(delete("/categories/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", is("Category not found")));
     }
 
-    // ---- GET CATEGORY WITH ARTICLES ----
+    // ---- GET CATEGORY WITH ARTICLES (Admin Success) ----
     @Test
-    public void testGetCategoryWithArticles_Success() throws Exception {
-        // Create an article for this category.
+    public void testGetCategoryWithArticles_AsAdmin_Success() throws Exception {
+        // Create an Article and add it to the sample category.
         Article article = new Article();
         article.setTitle("Sample Article");
         article.setContent("Sample content.");
         article.setCategory(sampleCategory);
-        // Add the article to the category's articles list and save the category.
         sampleCategory.getArticles().add(article);
         categoryRepository.save(sampleCategory);
 

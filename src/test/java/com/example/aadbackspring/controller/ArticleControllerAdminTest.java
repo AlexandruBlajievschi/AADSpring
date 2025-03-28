@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -20,7 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class ArticleControllerTest {
+@WithMockUser(username = "admin", roles = {"admin"})
+public class ArticleControllerAdminTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -39,7 +42,7 @@ public class ArticleControllerTest {
 
     @BeforeEach
     public void setup() {
-        // Clear existing data.
+        // Clear repositories
         articleRepository.deleteAll();
         categoryRepository.deleteAll();
 
@@ -57,18 +60,18 @@ public class ArticleControllerTest {
         sampleArticle = articleRepository.save(sampleArticle);
     }
 
-    // ---- GET ALL ARTICLES ----
+    // ---- GET ALL ARTICLES (Admin Success) ----
     @Test
-    public void testGetAllArticles_Success() throws Exception {
+    public void testGetAllArticles_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/articles")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ---- GET ARTICLE BY ID ----
+    // ---- GET ARTICLE BY ID (Admin Success) ----
     @Test
-    public void testGetArticleById_Success() throws Exception {
+    public void testGetArticleById_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/articles/{id}", sampleArticle.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -76,12 +79,13 @@ public class ArticleControllerTest {
                 .andExpect(jsonPath("$.title", is("Introduction to Altcoins")));
     }
 
-    // ---- CREATE ARTICLE ----
+    // ---- CREATE ARTICLE (Admin Success) ----
     @Test
-    public void testCreateArticle_Success() throws Exception {
+    public void testCreateArticle_AsAdmin_Success() throws Exception {
         Article newArticle = new Article();
         newArticle.setTitle("Advanced Altcoins");
         newArticle.setContent("This article dives deeper into altcoins.");
+        // Set the category by providing its id (so that the service reattaches the managed Category)
         newArticle.setCategory(sampleCategory);
 
         mockMvc.perform(post("/articles")
@@ -93,9 +97,9 @@ public class ArticleControllerTest {
                 .andExpect(jsonPath("$.category.id", is(sampleCategory.getId().intValue())));
     }
 
-    // ---- UPDATE ARTICLE ----
+    // ---- UPDATE ARTICLE (Admin Success) ----
     @Test
-    public void testUpdateArticle_Success() throws Exception {
+    public void testUpdateArticle_AsAdmin_Success() throws Exception {
         Article updateData = new Article();
         updateData.setTitle("Updated Altcoins Introduction");
         updateData.setContent("Updated content for the altcoins article.");
@@ -110,17 +114,18 @@ public class ArticleControllerTest {
                 .andExpect(jsonPath("$.category.id", is(sampleCategory.getId().intValue())));
     }
 
-    // ---- DELETE ARTICLE ----
+    // ---- DELETE ARTICLE (Admin Success) ----
     @Test
-    public void testDeleteArticle_Success() throws Exception {
+    public void testDeleteArticle_AsAdmin_Success() throws Exception {
         mockMvc.perform(delete("/articles/{id}", sampleArticle.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("deleted")));
+                .andExpect(jsonPath("$.message", containsString("deleted successfully")));
 
         // Verify deletion.
         mockMvc.perform(get("/articles/{id}", sampleArticle.getId())
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error", containsString("Article not found")));
     }
 }

@@ -3,6 +3,7 @@ package com.example.aadbackspring.controller;
 import com.example.aadbackspring.config.PasswordEncoderUtil;
 import com.example.aadbackspring.model.User;
 import com.example.aadbackspring.repository.UserRepository;
+import com.example.aadbackspring.repository.stripe.UserSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.*;
@@ -19,7 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class UserControllerTest {
+@WithMockUser(username = "admin", roles = {"admin"})
+public class UserControllerAdminTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -28,26 +31,27 @@ public class UserControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private UserSubscriptionRepository userSubscriptionRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private final PasswordEncoderUtil encoder = new PasswordEncoderUtil();
 
     @BeforeEach
     public void setup() {
-        // Clear the repository for a clean state before each test
+        // Clear the repository to ensure a clean test environment
+        userSubscriptionRepository.deleteAll();
         userRepository.deleteAll();
     }
 
-    private String encrypted(String rawPassword) {
-        return encoder.encode(rawPassword);
-    }
     // ---- CREATE ----
     @Test
-    public void testCreateUser_Success() throws Exception {
+    public void testCreateUser_AsAdmin_Success() throws Exception {
         User user = new User();
         user.setUsername("johndoe");
         user.setEmail("johndoe@example.com");
-        user.setPassword(encrypted("password123"));
+        user.setPassword(encoder.encode("password123"));
         user.setRole("user");
 
         mockMvc.perform(post("/users")
@@ -60,12 +64,11 @@ public class UserControllerTest {
 
     // ---- GET ALL ----
     @Test
-    public void testGetAllUsers_Success() throws Exception {
-        // Create a sample user
+    public void testGetAllUsers_AsAdmin_Success() throws Exception {
         User user = new User();
         user.setUsername("janedoe");
         user.setEmail("janedoe@example.com");
-        user.setPassword(encrypted("securePass"));
+        user.setPassword(encoder.encode("securePass"));
         user.setRole("admin");
         userRepository.save(user);
 
@@ -76,12 +79,11 @@ public class UserControllerTest {
 
     // ---- GET BY ID ----
     @Test
-    public void testGetUserById_Success() throws Exception {
-        // Create and save a user
+    public void testGetUserById_AsAdmin_Success() throws Exception {
         User user = new User();
         user.setUsername("testuser");
         user.setEmail("testuser@example.com");
-        user.setPassword(encrypted("testPass"));
+        user.setPassword(encoder.encode("testPass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
@@ -92,30 +94,26 @@ public class UserControllerTest {
     }
 
     @Test
-    public void testGetUserById_NotFound() throws Exception {
-        // Using an ID that doesn't exist
+    public void testGetUserById_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(get("/users/999"))
                 .andExpect(status().isNotFound())
-                // Assuming your controller returns an "error" field in the JSON when not found:
                 .andExpect(jsonPath("$.error", notNullValue()));
     }
 
     // ---- UPDATE ----
     @Test
-    public void testUpdateUser_Success() throws Exception {
-        // Create and save a user
+    public void testUpdateUser_AsAdmin_Success() throws Exception {
         User user = new User();
         user.setUsername("oldusername");
         user.setEmail("old@example.com");
-        user.setPassword(encrypted("oldpass"));
+        user.setPassword(encoder.encode("oldpass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
-        // Prepare update data
         User updateData = new User();
         updateData.setUsername("newusername");
         updateData.setEmail("new@example.com");
-        updateData.setPassword(encrypted("newpass"));
+        updateData.setPassword(encoder.encode("newpass"));
         updateData.setRole("admin");
 
         mockMvc.perform(put("/users/{id}", saved.getId())
@@ -128,11 +126,11 @@ public class UserControllerTest {
     }
 
     @Test
-    public void testUpdateUser_NotFound() throws Exception {
+    public void testUpdateUser_AsAdmin_NotFound() throws Exception {
         User updateData = new User();
         updateData.setUsername("nonexistent");
         updateData.setEmail("nonexistent@example.com");
-        updateData.setPassword(encrypted("nopass"));
+        updateData.setPassword(encoder.encode("nopass"));
         updateData.setRole("user");
 
         mockMvc.perform(put("/users/999")
@@ -144,28 +142,25 @@ public class UserControllerTest {
 
     // ---- DELETE ----
     @Test
-    public void testDeleteUser_Success() throws Exception {
-        // Create and save a user
+    public void testDeleteUser_AsAdmin_Success() throws Exception {
         User user = new User();
         user.setUsername("deleteuser");
         user.setEmail("deleteuser@example.com");
-        user.setPassword(encrypted("deletepass"));
+        user.setPassword(encoder.encode("deletepass"));
         user.setRole("user");
         User saved = userRepository.save(user);
 
-        // Delete user
         mockMvc.perform(delete("/users/{id}", saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", containsString("deleted")));
 
-        // Verify deletion: attempt to fetch the user should return 404
         mockMvc.perform(get("/users/{id}", saved.getId()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", notNullValue()));
     }
 
     @Test
-    public void testDeleteUser_NotFound() throws Exception {
+    public void testDeleteUser_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(delete("/users/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error", notNullValue()));

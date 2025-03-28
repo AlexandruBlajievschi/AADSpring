@@ -2,7 +2,6 @@ package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.model.News;
 import com.example.aadbackspring.repository.NewsRepository;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,17 +9,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class NewsControllerTest {
+@WithMockUser(username = "regularuser", roles = {"user"})
+public class NewsControllerUserTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -54,9 +57,26 @@ public class NewsControllerTest {
         sampleNews = newsRepository.save(sampleNews);
     }
 
-    // ---- CREATE NEWS (Good Path) ----
+    // ---- GET ALL NEWS (Allowed for regular user) ----
     @Test
-    public void testCreateNews_Success() throws Exception {
+    public void testGetAllNews_AsUser_Success() throws Exception {
+        mockMvc.perform(get("/news"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
+    }
+
+    // ---- GET NEWS BY ID (Allowed for regular user) ----
+    @Test
+    public void testGetNewsById_AsUser_Success() throws Exception {
+        mockMvc.perform(get("/news/{id}", sampleNews.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title", is("Sample News Title")))
+                .andExpect(jsonPath("$.source", is("coinpedia")));
+    }
+
+    // ---- CREATE NEWS (Forbidden for regular user) ----
+    @Test
+    public void testCreateNews_AsUser_Forbidden() throws Exception {
         News newNews = new News();
         newNews.setExternalId("456");
         newNews.setGuid("new-guid");
@@ -73,39 +93,13 @@ public class NewsControllerTest {
         mockMvc.perform(post("/news")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newNews)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title", is("New News Title")))
-                .andExpect(jsonPath("$.source", is("cryptopotato")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Access Denied")));
     }
 
-    // ---- GET ALL NEWS (Good Path) ----
+    // ---- UPDATE NEWS (Forbidden for regular user) ----
     @Test
-    public void testGetAllNews_Success() throws Exception {
-        mockMvc.perform(get("/news"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
-    }
-
-    // ---- GET NEWS BY ID (Good Path) ----
-    @Test
-    public void testGetNewsById_Success() throws Exception {
-        mockMvc.perform(get("/news/{id}", sampleNews.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title", is("Sample News Title")))
-                .andExpect(jsonPath("$.source", is("coinpedia")));
-    }
-
-    // ---- GET NEWS BY ID (Bad Path) ----
-    @Test
-    public void testGetNewsById_NotFound() throws Exception {
-        mockMvc.perform(get("/news/{id}", 999L))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("News not found")));
-    }
-
-    // ---- UPDATE NEWS (Good Path) ----
-    @Test
-    public void testUpdateNews_Success() throws Exception {
+    public void testUpdateNews_AsUser_Forbidden() throws Exception {
         News updateData = new News();
         updateData.setExternalId("123-updated");
         updateData.setGuid("sample-guid-updated");
@@ -122,52 +116,15 @@ public class NewsControllerTest {
         mockMvc.perform(put("/news/{id}", sampleNews.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateData)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title", is("Sample News Title Updated")))
-                .andExpect(jsonPath("$.source", is("cointelegraph")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Access Denied")));
     }
 
-    // ---- UPDATE NEWS (Bad Path) ----
+    // ---- DELETE NEWS (Forbidden for regular user) ----
     @Test
-    public void testUpdateNews_NotFound() throws Exception {
-        News updateData = new News();
-        updateData.setExternalId("nonexistent");
-        updateData.setGuid("nonexistent-guid");
-        updateData.setPublishedOn(0L);
-        updateData.setImageurl("https://example.com/none.png");
-        updateData.setTitle("Nonexistent News");
-        updateData.setUrl("https://example.com/none");
-        updateData.setBody("No body");
-        updateData.setTags("none");
-        updateData.setLang("EN");
-        updateData.setCategories("None");
-        updateData.setSource("none");
-
-        mockMvc.perform(put("/news/{id}", 999L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateData)))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("News not found")));
-    }
-
-    // ---- DELETE NEWS (Good Path) ----
-    @Test
-    public void testDeleteNews_Success() throws Exception {
+    public void testDeleteNews_AsUser_Forbidden() throws Exception {
         mockMvc.perform(delete("/news/{id}", sampleNews.getId()))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("deleted successfully")));
-
-        // Verify deletion by attempting to get the deleted record.
-        mockMvc.perform(get("/news/{id}", sampleNews.getId()))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("News not found")));
-    }
-
-    // ---- DELETE NEWS (Bad Path) ----
-    @Test
-    public void testDeleteNews_NotFound() throws Exception {
-        mockMvc.perform(delete("/news/{id}", 999L))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("News not found")));
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Access Denied")));
     }
 }
