@@ -9,17 +9,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-public class CoinControllerTest {
+@WithMockUser(username = "admin", roles = {"admin"})
+public class CoinControllerAdminTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -34,7 +39,7 @@ public class CoinControllerTest {
 
     @BeforeEach
     public void setup() {
-        // Clear repository before each test.
+        // Clear repository for a clean test state.
         coinRepository.deleteAll();
 
         // Create and save a sample coin.
@@ -47,9 +52,9 @@ public class CoinControllerTest {
         sampleCoin = coinRepository.save(sampleCoin);
     }
 
-    // ---- CREATE COIN (Happy Path) ----
+    // ---- CREATE COIN (Admin Success) ----
     @Test
-    public void testCreateCoin_Success() throws Exception {
+    public void testCreateCoin_AsAdmin_Success() throws Exception {
         Coin newCoin = new Coin();
         newCoin.setExternalId(101L);
         newCoin.setName("Ethereum");
@@ -67,34 +72,37 @@ public class CoinControllerTest {
                 .andExpect(jsonPath("$.percent_change_24h", is(1.2)));
     }
 
-    // ---- GET ALL COINS (Happy Path) ----
+    // ---- GET ALL COINS (Admin Success) ----
     @Test
-    public void testGetAllCoins_Success() throws Exception {
+    public void testGetAllCoins_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/coins"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
     }
 
-    // ---- GET COIN BY ID (Happy Path) ----
+    // ---- GET COIN BY ID (Admin Success) ----
     @Test
-    public void testGetCoinById_Success() throws Exception {
+    public void testGetCoinById_AsAdmin_Success() throws Exception {
         mockMvc.perform(get("/coins/{id}", sampleCoin.getId()))
                 .andExpect(status().isOk())
+                // Note: the JSON "id" field maps the coin's externalId.
+                .andExpect(jsonPath("$.id", is(100)))
                 .andExpect(jsonPath("$.name", is("Bitcoin")))
                 .andExpect(jsonPath("$.symbol", is("BTC")));
     }
 
     // ---- GET COIN BY ID (Not Found) ----
     @Test
-    public void testGetCoinById_NotFound() throws Exception {
+    public void testGetCoinById_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(get("/coins/{id}", 999L))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string(containsString("Coin not found")));
     }
 
-    // ---- UPDATE COIN (Happy Path) ----
+    // ---- UPDATE COIN (Admin Success) ----
     @Test
-    public void testUpdateCoin_Success() throws Exception {
+    public void testUpdateCoin_AsAdmin_Success() throws Exception {
+        // Modify sample coin fields.
         sampleCoin.setName("Bitcoin Updated");
         sampleCoin.setSymbol("BTCU");
         sampleCoin.setPrice(51000.0);
@@ -112,7 +120,7 @@ public class CoinControllerTest {
 
     // ---- UPDATE COIN (Not Found) ----
     @Test
-    public void testUpdateCoin_NotFound() throws Exception {
+    public void testUpdateCoin_AsAdmin_NotFound() throws Exception {
         Coin updateCoin = new Coin();
         updateCoin.setExternalId(102L);
         updateCoin.setName("Nonexistent Coin");
@@ -127,14 +135,14 @@ public class CoinControllerTest {
                 .andExpect(content().string(containsString("Coin not found")));
     }
 
-    // ---- DELETE COIN (Happy Path) ----
+    // ---- DELETE COIN (Admin Success) ----
     @Test
-    public void testDeleteCoin_Success() throws Exception {
+    public void testDeleteCoin_AsAdmin_Success() throws Exception {
         mockMvc.perform(delete("/coins/{id}", sampleCoin.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message", is("Coin deleted successfully")));
 
-        // Verify deletion by attempting to get the deleted record.
+        // Verify deletion by trying to fetch the deleted coin.
         mockMvc.perform(get("/coins/{id}", sampleCoin.getId()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string(containsString("Coin not found")));
@@ -142,7 +150,7 @@ public class CoinControllerTest {
 
     // ---- DELETE COIN (Not Found) ----
     @Test
-    public void testDeleteCoin_NotFound() throws Exception {
+    public void testDeleteCoin_AsAdmin_NotFound() throws Exception {
         mockMvc.perform(delete("/coins/{id}", 999L))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string(containsString("Coin not found")));

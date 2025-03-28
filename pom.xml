@@ -110,6 +110,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Spring Framework Security (for tests) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
         <!-- PostgreSQL Driver -->
         <dependency>
             <groupId>org.postgresql</groupId>
