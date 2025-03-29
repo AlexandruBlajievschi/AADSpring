@@ -18,9 +18,10 @@ public class JwtTokenUtil {
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
 
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        // Store user's role(s) as claims
+    // Overloaded method to accept extra claims
+    public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
+        // Combine the extra claims with a default claim (for example, the user's role)
+        Map<String, Object> claims = new HashMap<>(extraClaims);
         claims.put("role", userDetails.getAuthorities());
         return Jwts.builder()
                 .setClaims(claims)
@@ -29,6 +30,11 @@ public class JwtTokenUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
+    }
+
+    // Existing method for backward compatibility (if needed)
+    public String generateToken(UserDetails userDetails) {
+        return generateToken(userDetails, new HashMap<>());
     }
 
     public String getUsernameFromToken(String token) {
@@ -45,8 +51,11 @@ public class JwtTokenUtil {
     }
 
     private boolean isTokenExpired(String token) {
-        Date expiration = Jwts.parser().setSigningKey(jwtSecret)
-                .parseClaimsJws(token).getBody().getExpiration();
+        Date expiration = Jwts.parser()
+                .setSigningKey(jwtSecret)
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
         return expiration.before(new Date());
     }
 }
