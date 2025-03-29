@@ -2,6 +2,7 @@ package com.example.aadbackspring.controller.stripe;
 
 import com.example.aadbackspring.model.stripe.SubscriptionPlan;
 import com.example.aadbackspring.repository.stripe.SubscriptionPlanRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,13 +18,8 @@ public class SubscriptionPlanController {
     }
 
     @GetMapping
-    public List<SubscriptionPlan> getAllPlans() {
+    public ResponseEntity<List<SubscriptionPlan>> getAllPlans() {
         List<SubscriptionPlan> plans = repository.findAll();
-        if (plans.isEmpty()) {
-            System.out.println("⚠️ No Subscription Plans found in DB!");
-        } else {
-            System.out.println("✅ Found " + plans.size() + " subscription plans.");
-        }
-        return plans;
+        return ResponseEntity.ok(plans);
     }
 }

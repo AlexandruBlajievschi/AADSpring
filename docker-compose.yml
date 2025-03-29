@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  app:
+    container_name: myapp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Reference variables from the .env file using ${VAR_NAME}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CMC_API_KEY: ${CMC_API_KEY}
+      DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
+      DATASOURCE_URL: "jdbc:postgresql://db:5432/SpringDB"
+      DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JWT_SECRET: ${JWT_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      - db
+
+  db:
+    container_name: my-postgres
+    image: postgres:15
+    environment:
+      POSTGRES_DB: "SpringDB"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: ${DATASOURCE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data  # Persist the Postgres data in a volume
+
+# Define volumes at the bottom
+volumes:
+  pg_data:
+    driver: local

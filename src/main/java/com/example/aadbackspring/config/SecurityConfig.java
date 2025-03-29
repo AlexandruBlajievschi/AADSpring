@@ -36,16 +36,27 @@ public class SecurityConfig {
 
                 // Define URL access rules
                 .authorizeHttpRequests(authz -> authz
+                        // Permit all users to access the /stripe endpoints
+                        .requestMatchers("/stripe/**").permitAll()
+                        // Allow access to the favicon.ico
+                        .requestMatchers("/favicon.ico").permitAll()
+                        // Allow access to authentication endpoints (e.g., /auth/**)
                         .requestMatchers("/auth/**").permitAll()
+                        // Restrict access to the /subscriptions endpoint to only admins
+                        .requestMatchers("/subscriptions/**").hasRole("admin")
+                        // Allow GET requests for other public resources
                         .requestMatchers(HttpMethod.GET,
                                 "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").permitAll()
+                        // Restrict POST, PUT, DELETE methods for certain endpoints to admins
                         .requestMatchers(HttpMethod.POST,
                                 "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
                         .requestMatchers(HttpMethod.PUT,
                                 "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
                         .requestMatchers(HttpMethod.DELETE,
                                 "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
+                        // Require authentication for all other requests
                         .anyRequest().authenticated()
+                        
                 );
 
         // Add the JWT authentication filter before the default UsernamePasswordAuthenticationFilter

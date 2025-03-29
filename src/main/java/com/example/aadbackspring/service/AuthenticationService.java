@@ -3,6 +3,9 @@ package com.example.aadbackspring.service;
 import com.example.aadbackspring.config.JwtTokenUtil;
 import com.example.aadbackspring.config.PasswordEncoderUtil;
 import com.example.aadbackspring.model.User;
+import com.example.aadbackspring.model.stripe.UserSubscription;
+import com.example.aadbackspring.repository.UserRepository;
+import com.example.aadbackspring.repository.stripe.UserSubscriptionRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -13,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,13 +26,20 @@ public class AuthenticationService {
 
     private final UserService userService;
     private final JwtTokenUtil jwtTokenUtil;
+    private final UserRepository userRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
 
     @Value("${google.client-id}")
     private String googleClientId;
 
-    public AuthenticationService(UserService userService, JwtTokenUtil jwtTokenUtil) {
+    public AuthenticationService(UserService userService,
+                                 JwtTokenUtil jwtTokenUtil,
+                                 UserRepository userRepository,
+                                 UserSubscriptionRepository userSubscriptionRepository) {
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
+        this.userRepository = userRepository;
+        this.userSubscriptionRepository = userSubscriptionRepository;
     }
 
     public ResponseEntity<?> loginWithGoogleToken(String googleToken) {
@@ -64,10 +73,24 @@ public class AuthenticationService {
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
         );
 
-        String token = jwtTokenUtil.generateToken(userDetails);
+        // Check if the user has an active subscription.
+        boolean hasActiveSubscription = false;
+        if (user.getStripeCustomerId() != null && !user.getStripeCustomerId().isEmpty()) {
+            Optional<UserSubscription> activeSub = userSubscriptionRepository
+                    .findByStripeCustomerIdAndStatus(user.getStripeCustomerId(), "active");
+            hasActiveSubscription = activeSub.isPresent();
+        }
+
+        // Prepare extra claims with subscription status.
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("activeSubscription", hasActiveSubscription);
+
+        // Generate token with the extra claim.
+        String token = jwtTokenUtil.generateToken(userDetails, extraClaims);
         Map<String, Object> response = new HashMap<>();
         response.put("token", token);
         response.put("user", user);
+        response.put("activeSubscription", hasActiveSubscription);
         return ResponseEntity.ok(response);
     }
 
@@ -84,4 +107,3 @@ public class AuthenticationService {
         }
     }
 }
-
