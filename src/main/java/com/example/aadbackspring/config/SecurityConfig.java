@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/stripe/**").permitAll()
                         // Allow access to the favicon.ico
                         .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         // Allow access to authentication endpoints (e.g., /auth/**)
                         .requestMatchers("/auth/**").permitAll()
                         // Restrict access to the /subscriptions endpoint to only admins

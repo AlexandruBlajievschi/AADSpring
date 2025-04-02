@@ -9,8 +9,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
-
 import java.util.List;
+
+// Import our password encoder utility.
+import com.example.aadbackspring.config.PasswordEncoderUtil;
 
 @Configuration
 @ConditionalOnProperty(name = "database.initializer.enabled", havingValue = "true", matchIfMissing = true)
@@ -22,14 +24,18 @@ public class DatabaseInitializer {
     @Value("${admin.password}")
     private String adminPassword;
 
+    @Value("${default.user.email}")
+    private String userEmail;
+
+    @Value("${default.user.password}")
+    private String userPassword;
+
     @Bean
-    CommandLineRunner initDatabase(
-            SubscriptionPlanRepository planRepository,
-            UserRepository userRepository
-    ) {
+    CommandLineRunner initDatabase(SubscriptionPlanRepository planRepository, UserRepository userRepository) {
         return args -> {
             initializeSubscriptionPlans(planRepository);
             initializeAdminUser(userRepository);
+            initializeDefaultUser(userRepository);
         };
     }
 
@@ -44,14 +50,25 @@ public class DatabaseInitializer {
 
     private void initializeAdminUser(UserRepository userRepository) {
         String encryptedPassword = new PasswordEncoderUtil().encode(adminPassword);
-
         if (userRepository.findByEmail(adminEmail).isEmpty()) {
             User admin = new User();
             admin.setUsername("admin");
             admin.setEmail(adminEmail);
-            admin.setPassword(encryptedPassword); // Replace in production
+            admin.setPassword(encryptedPassword);
             admin.setRole("admin");
             userRepository.save(admin);
+        }
+    }
+
+    private void initializeDefaultUser(UserRepository userRepository) {
+        String encryptedPassword = new PasswordEncoderUtil().encode(userPassword);
+        if (userRepository.findByEmail(userEmail).isEmpty()) {
+            User user = new User();
+            user.setUsername("user");
+            user.setEmail(userEmail);
+            user.setPassword(encryptedPassword);
+            user.setRole("user");
+            userRepository.save(user);
         }
     }
 }

@@ -202,7 +202,6 @@ public class StripeService {
                 userSub.setStartDate(Instant.ofEpochSecond(invoice.getPeriodStart()));
                 userSub.setEndDate(Instant.ofEpochSecond(invoice.getPeriodEnd()));
                 userSubscriptionRepository.save(userSub);
-                System.out.println("Updated subscription " + subscriptionId + " to active");
             });
         }
     }
@@ -215,7 +214,6 @@ public class StripeService {
                 userSub.setStartDate(Instant.ofEpochSecond(subscription.getCurrentPeriodStart()));
                 userSub.setEndDate(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
                 userSubscriptionRepository.save(userSub);
-                System.out.println("Updated subscription " + subscriptionId + " status to " + subscription.getStatus());
             });
         }
     }

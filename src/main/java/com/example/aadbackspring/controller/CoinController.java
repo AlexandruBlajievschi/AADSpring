@@ -58,4 +58,11 @@ public class CoinController {
         }
         return ResponseEntity.ok(Collections.singletonMap("message", "Coin deleted successfully"));
     }
+
+    // READ ALL local
+    @GetMapping("/local")
+    public ResponseEntity<List<Coin>> getLocalCoins() {
+        List<Coin> coins = coinService.getLocalCoins();
+        return ResponseEntity.ok(coins);
+    }
 }
