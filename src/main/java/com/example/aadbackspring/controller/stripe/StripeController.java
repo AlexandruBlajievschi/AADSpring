@@ -28,8 +28,6 @@ public class StripeController {
         String payload;
         try {
             payload = StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
-            System.out.println("Received raw payload: " + payload);
-            System.out.println("Stripe-Signature header: " + sigHeader);
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("Unable to read request body");
         }

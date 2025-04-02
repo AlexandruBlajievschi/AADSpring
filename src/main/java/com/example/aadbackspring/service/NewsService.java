@@ -123,4 +123,8 @@ public class NewsService {
             logger.error("Scheduled update failed: {}", e.getMessage());
         }
     }
+    public List<News> getLocalNews() {
+        return newsRepository.findAll();
+    }
+
 }

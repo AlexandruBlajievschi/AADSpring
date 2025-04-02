@@ -1,12 +1,10 @@
 package com.example.aadbackspring.controller;
 
-
 import com.example.aadbackspring.service.AuthenticationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -19,11 +17,16 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
-        return authenticationService.loginWithGoogleToken(payload.get("token"));
+        String email = payload.get("email");
+        String password = payload.get("password");
+        return authenticationService.login(email, password);
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        return ResponseEntity.ok(authentication);
+    @PutMapping("/updatePassword")
+    public ResponseEntity<?> updatePassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String currentPassword = payload.get("currentPassword");
+        String newPassword = payload.get("newPassword");
+        return authenticationService.updatePassword(email, currentPassword, newPassword);
     }
 }

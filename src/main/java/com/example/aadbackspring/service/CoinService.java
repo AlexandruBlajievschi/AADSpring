@@ -159,4 +159,9 @@ public class CoinService {
             }
         }
     }
+
+    public List<Coin> getLocalCoins() {
+        return repository.findAll();
+    }
+
 }
