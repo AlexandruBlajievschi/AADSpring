@@ -67,20 +67,51 @@ public class StripeService {
         return ResponseEntity.ok("Success");
     }
 
-    public Subscription cancelSubscription(String subscriptionId) {
-        try {
-            Subscription subscription = Subscription.retrieve(subscriptionId);
-            Subscription cancelled = subscription.cancel();
-
-            userSubscriptionRepository.findByStripeSubscriptionId(subscriptionId).ifPresent(userSub -> {
-                userSub.setStatus(cancelled.getStatus());
-                userSub.setEndDate(Instant.ofEpochSecond(cancelled.getCurrentPeriodEnd()));
-                userSubscriptionRepository.save(userSub);
-            });
-            return cancelled;
-        } catch (StripeException e) {
-            throw new RuntimeException("Failed to cancel subscription: " + e.getMessage(), e);
+    public Subscription cancelSubscriptionByEmail(String email) throws StripeException {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email must not be null or empty");
         }
+
+        // Verify that the user exists
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (!userOpt.isPresent()) {
+            throw new NoSuchElementException("User with email " + email + " not found");
+        }
+        User user = userOpt.get();
+
+        List<UserSubscription> subscriptions = userSubscriptionRepository
+                .findByUserId(user.getId())
+                .orElseThrow(() -> new NoSuchElementException("No subscriptions found for user with email " + email));
+
+        // Iterate through subscriptions to find active ones.
+        boolean foundActive = false;
+        Subscription lastCanceledSubscription = null;
+        for (UserSubscription userSubscription : subscriptions) {
+            if ("active".equalsIgnoreCase(userSubscription.getStatus())) {
+                foundActive = true;
+                String stripeSubscriptionId = userSubscription.getStripeSubscriptionId();
+
+                Subscription subscription = Subscription.retrieve(stripeSubscriptionId);
+                Subscription canceledSubscription = subscription.cancel();
+
+                userSubscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId).ifPresent(userSub -> {
+                    userSub.setStatus(canceledSubscription.getStatus());
+                    userSub.setEndDate(Instant.ofEpochSecond(canceledSubscription.getCurrentPeriodEnd()));
+                    userSubscriptionRepository.save(userSub);
+                });
+                // Print the canceled subscription ID for debugging purposes
+                System.out.println("Canceled Subscription ID: " + stripeSubscriptionId);
+
+                lastCanceledSubscription = canceledSubscription;
+                return canceledSubscription;
+            }
+        }
+
+        if (!foundActive || lastCanceledSubscription == null) {
+            throw new NoSuchElementException("No active subscription found for user with email " + email);
+        }
+
+        return lastCanceledSubscription;
     }
 
     // -------------------------

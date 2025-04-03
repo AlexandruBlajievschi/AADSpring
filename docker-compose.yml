@@ -8,8 +8,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Reference variables from the .env file using ${VAR_NAME}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       CMC_API_KEY: ${CMC_API_KEY}
@@ -33,9 +33,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data  # Persist the Postgres data in a volume
+      - pg_data:/var/lib/postgresql/data
 
-# Define volumes at the bottom
 volumes:
   pg_data:
     driver: local

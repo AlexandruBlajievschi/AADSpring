@@ -40,12 +40,13 @@ public class StripeController {
         return stripeService.createPaymentSheet(request);
     }
 
-    @DeleteMapping("/subscription/{id}")
-    public SubscriptionCancelRecord cancelSubscription(@PathVariable("id") String subscriptionId) {
-        Subscription subscription = stripeService.cancelSubscription(subscriptionId);
-        if (subscription != null) {
-            return new SubscriptionCancelRecord(subscription.getStatus());
+    @DeleteMapping("/subscription")
+    public ResponseEntity<?> cancelSubscriptionByEmail(@RequestParam("email") String email) {
+        try {
+            Subscription subscription = stripeService.cancelSubscriptionByEmail(email);
+            return ResponseEntity.ok(new SubscriptionCancelRecord(subscription.getStatus()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        return null;
     }
 }
