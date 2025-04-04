@@ -1,7 +1,9 @@
 package com.example.aadbackspring.config;
 
+import com.example.aadbackspring.model.AppConfiguration;
 import com.example.aadbackspring.model.User;
 import com.example.aadbackspring.model.stripe.SubscriptionPlan;
+import com.example.aadbackspring.repository.AppConfigurationRepository;
 import com.example.aadbackspring.repository.UserRepository;
 import com.example.aadbackspring.repository.stripe.SubscriptionPlanRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -31,11 +33,12 @@ public class DatabaseInitializer {
     private String userPassword;
 
     @Bean
-    CommandLineRunner initDatabase(SubscriptionPlanRepository planRepository, UserRepository userRepository) {
+    CommandLineRunner initDatabase(SubscriptionPlanRepository planRepository, UserRepository userRepository, AppConfigurationRepository configRepository ) {
         return args -> {
             initializeSubscriptionPlans(planRepository);
             initializeAdminUser(userRepository);
             initializeDefaultUser(userRepository);
+            initializeAppConfiguration(configRepository);
         };
     }
 
@@ -69,6 +72,14 @@ public class DatabaseInitializer {
             user.setPassword(encryptedPassword);
             user.setRole("user");
             userRepository.save(user);
+        }
+
+    }
+    private void initializeAppConfiguration(AppConfigurationRepository configRepository) {
+        if (configRepository.count() == 0) {
+            // Create a default configuration record
+            AppConfiguration defaultConfig = new AppConfiguration(false, false);
+            configRepository.save(defaultConfig);
         }
     }
 }

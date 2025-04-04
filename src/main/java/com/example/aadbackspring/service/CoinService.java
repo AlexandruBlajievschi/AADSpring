@@ -8,6 +8,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
@@ -32,6 +33,8 @@ public class CoinService {
 
     @Value("${cmc.api.key}")
     private String cmcApiKey;
+    @Autowired
+    private AppConfigurationService configService;
 
     public CoinService(CoinRepository repository, RestTemplateBuilder restTemplateBuilder) {
         this.repository = repository;
@@ -84,11 +87,17 @@ public class CoinService {
      * Unified method that attempts to fetch coin data from the external API.
      */
     public List<Coin> getCoinListings() {
-        try {
-            return getCoinsFromExternal();
-        } catch (Exception ex) {
-            logger.warn("Falling back to local coin data: {}", ex.getMessage());
+        boolean useLocal = configService.getConfig().isUseLocalCoins();
+
+        if (useLocal) {
             return repository.findAll();
+        } else {
+            try {
+                return getCoinsFromExternal();
+            } catch (Exception ex) {
+                logger.warn("Falling back to local coin data: {}", ex.getMessage());
+                return repository.findAll();
+            }
         }
     }
 
@@ -159,9 +168,4 @@ public class CoinService {
             }
         }
     }
-
-    public List<Coin> getLocalCoins() {
-        return repository.findAll();
-    }
-
 }

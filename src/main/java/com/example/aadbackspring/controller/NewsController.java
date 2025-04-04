@@ -50,10 +50,4 @@ public class NewsController {
         newsService.deleteNews(id);
         return ResponseEntity.ok("{\"message\": \"News with id " + id + " deleted successfully\"}");
     }
-
-    // GET local news
-    @GetMapping("/local")
-    public List<News> getLocalNews() {
-        return newsService.getLocalNews();
-    }
 }

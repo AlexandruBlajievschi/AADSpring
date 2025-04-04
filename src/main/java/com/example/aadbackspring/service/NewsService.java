@@ -8,6 +8,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,8 @@ public class NewsService {
 
     private final RestTemplate restTemplate;
     private final NewsRepository newsRepository;
+    @Autowired
+    private AppConfigurationService configService;
 
     @Value("${external.news.api.url}")
     private String externalNewsApiUrl;
@@ -63,11 +66,18 @@ public class NewsService {
      * If that fails, it falls back to local repository data.
      */
     public List<News> getNews() {
-        try {
-            return getNewsFromExternal();
-        } catch (Exception ex) {
-            logger.warn("Falling back to local news: {}", ex.getMessage());
+        boolean useLocal = configService.getConfig().isUseLocalNews();
+
+        if (useLocal) {
             return newsRepository.findAll();
+        } else {
+            // Fallback if external fails
+            try {
+                return getNewsFromExternal();
+            } catch (Exception ex) {
+                logger.warn("Falling back to local news: {}", ex.getMessage());
+                return newsRepository.findAll();
+            }
         }
     }
 
@@ -123,8 +133,4 @@ public class NewsService {
             logger.error("Scheduled update failed: {}", e.getMessage());
         }
     }
-    public List<News> getLocalNews() {
-        return newsRepository.findAll();
-    }
-
 }
