@@ -36,29 +36,34 @@ public class SecurityConfig {
 
                 // Define URL access rules
                 .authorizeHttpRequests(authz -> authz
-                        // Permit all users to access the /stripe endpoints
-                        .requestMatchers("/stripe/**").permitAll()
-                        // Allow access to the favicon.ico
-                        .requestMatchers("/favicon.ico").permitAll()
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        // Allow access to authentication endpoints (e.g., /auth/**)
+                        // Public endpoints for everyone:
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/favicon.ico").permitAll()
                         .requestMatchers("/auth/**").permitAll()
-                        // Restrict access to the /subscriptions endpoint to only admins
-                        .requestMatchers("/subscriptions/**").hasRole("admin")
-                        // Allow GET requests for other public resources
+
+                        // Endpoints that require authentication (but not necessarily admin):
+                        .requestMatchers("/stripe/**").authenticated()
                         .requestMatchers(HttpMethod.GET,
-                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").permitAll()
-                        // Restrict POST, PUT, DELETE methods for certain endpoints to admins
+                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**")
+                        .authenticated()
+
+                        // Endpoints that require admin privileges (all non-GET methods):
                         .requestMatchers(HttpMethod.POST,
-                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
+                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**")
+                        .hasRole("admin")
                         .requestMatchers(HttpMethod.PUT,
-                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
+                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**")
+                        .hasRole("admin")
                         .requestMatchers(HttpMethod.DELETE,
-                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**").hasRole("admin")
-                        // Require authentication for all other requests
+                                "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**")
+                        .hasRole("admin")
+
+                        // Other admin-only endpoints:
+                        .requestMatchers("/subscriptions/**").hasRole("admin")
+                        .requestMatchers(HttpMethod.GET, "/api/config").hasRole("admin")
+                        .requestMatchers(HttpMethod.PUT, "/api/config").hasRole("admin")
+
+                        // All other requests require authentication
                         .anyRequest().authenticated()
-                        
                 );
 
         // Add the JWT authentication filter before the default UsernamePasswordAuthenticationFilter

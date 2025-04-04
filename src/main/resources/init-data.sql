@@ -317,3 +317,5 @@ INSERT INTO terms (term, meaning) VALUES ('YFII', 'A special version of a crypto
 INSERT INTO terms (term, meaning) VALUES ('Zero Knowledge Proof', 'A clever way to prove something is true without saying the details.') ON CONFLICT (term) DO NOTHING;
 INSERT INTO terms (term, meaning) VALUES ('Zcash', 'A crypto that keeps your transactions more private.') ON CONFLICT (term) DO NOTHING;
 INSERT INTO terms (term, meaning) VALUES ('Zk-Rollup', 'A way to make Ethereum faster and cheaper using smart math.') ON CONFLICT (term) DO NOTHING;
+INSERT INTO terms (term, meaning) VALUES ('DEX', 'DEX stands for Decentralized Exchange. It is a platform where people can buy and sell cryptocurrencies directly with each other, without needing a central authority like a bank or a company.') ON CONFLICT (term) DO NOTHING;
+INSERT INTO terms (term, meaning) VALUES ('CEX', 'CEX stands for Centralized Exchange. It is a platform where people can buy and sell cryptocurrencies, but it is managed by a central organization, like a company, which takes care of transactions.') ON CONFLICT (term) DO NOTHING;
