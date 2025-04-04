@@ -1,8 +1,11 @@
 package com.example.aadbackspring.controller;
 
 import com.example.aadbackspring.service.AuthenticationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
 import java.util.Map;
 
 @RestController
@@ -20,6 +23,17 @@ public class AuthController {
         String email = payload.get("email");
         String password = payload.get("password");
         return authenticationService.login(email, password);
+    }
+
+    @GetMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "Missing or invalid Authorization header"));
+        }
+
+        String token = authHeader.substring(7);
+        return authenticationService.refreshToken(token);
     }
 
     @PutMapping("/updatePassword")
