@@ -81,6 +81,48 @@ public class AuthenticationService {
         return ResponseEntity.ok(response);
     }
 
+    public ResponseEntity<?> refreshToken(String oldToken) {
+        try {
+            String email = jwtTokenUtil.getUsernameFromToken(oldToken);
+            Optional<User> userOptional = userService.getUserByEmail(email);
+
+            if (userOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "User not found"));
+            }
+
+            User user = userOptional.get();
+
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    user.getEmail(),
+                    user.getPassword(),
+                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+            );
+
+            boolean hasActiveSubscription = false;
+            if (user.getStripeCustomerId() != null && !user.getStripeCustomerId().isEmpty()) {
+                Optional<UserSubscription> activeSub = userSubscriptionRepository
+                        .findByStripeCustomerIdAndStatus(user.getStripeCustomerId(), "active");
+                hasActiveSubscription = activeSub.isPresent();
+            }
+
+            Map<String, Object> extraClaims = new HashMap<>();
+            extraClaims.put("activeSubscription", hasActiveSubscription);
+            extraClaims.put("role", userDetails.getAuthorities());
+
+            String newToken = jwtTokenUtil.generateToken(userDetails, extraClaims);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", newToken);
+            response.put("activeSubscription", hasActiveSubscription);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("error", "Invalid token"));
+        }
+    }
+
     // Handles the update password request.
     public ResponseEntity<?> updatePassword(String email, String currentPassword, String newPassword) {
         // Validate input parameters.
