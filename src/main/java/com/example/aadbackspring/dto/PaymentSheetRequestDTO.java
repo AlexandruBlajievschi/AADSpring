@@ -6,11 +6,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PaymentSheetRequestDTO {
-    // Minimal data for subscription flow:
-    // The user's email and the subscription priceId (from your Stripe dashboard)
+
     private String email;
-    private String priceId;   // e.g. "price_1R1U1o4gHyUjWEHaEqEYcyHd"
-    private Integer quantity; // optional; defaults to 1 if not provided
+    private String priceId;
+    private Integer quantity;
 
     public PaymentSheetRequestDTO() {}
 }

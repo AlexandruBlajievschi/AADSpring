@@ -17,13 +17,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DExchange {
 
-    // DB primary key – not exposed in the JSON response from the external API
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonIgnore
     private Long id;
 
-    // This field maps the external API "id" to our externalId field.
     @JsonProperty("id")
     private Long externalId;
 
@@ -36,10 +34,8 @@ public class DExchange {
     @JsonProperty("market_share")
     private Double marketShare;
 
-    // The "type" field is assumed to be identical in JSON and in our model.
     private String type;
 
-    // Map the external API's "quote" array to our list.
     @ElementCollection
     @CollectionTable(name = "dexchange_quote", joinColumns = @JoinColumn(name = "dexchange_id"))
     private List<DExchangeQuote> quote;

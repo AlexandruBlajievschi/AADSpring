@@ -20,7 +20,6 @@ public class DExchangeController {
         this.service = service;
     }
 
-    // CREATE
     @PostMapping
     public ResponseEntity<?> createDExchange(@RequestBody DExchange dexchange) {
         try {
@@ -32,7 +31,6 @@ public class DExchangeController {
         }
     }
 
-    // READ ALL – Use unified service to get listings (external API with fallback)
     @GetMapping
     public ResponseEntity<List<DExchange>> getAllDExchanges() {
         List<DExchange> exchanges = service.getDexListings();
@@ -54,7 +52,6 @@ public class DExchangeController {
     }
 
 
-    // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteDExchange(@PathVariable Long id) {
         boolean deleted = service.deleteDExchange(id);

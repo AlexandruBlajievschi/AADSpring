@@ -3,6 +3,7 @@ package com.example.aadbackspring.service;
 import com.example.aadbackspring.model.Category;
 import com.example.aadbackspring.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -42,7 +43,6 @@ public class CategoryService {
         }).orElse(false);
     }
 
-    // For getting a category with its articles (if needed)
     public Optional<Category> getCategoryWithArticles(Long id) {
         return categoryRepository.findById(id);
     }

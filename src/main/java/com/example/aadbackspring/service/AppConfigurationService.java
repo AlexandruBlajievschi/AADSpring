@@ -11,10 +11,7 @@ public class AppConfigurationService {
     @Autowired
     private AppConfigurationRepository configRepository;
 
-    // If you assume there's always exactly one row:
     public AppConfiguration getConfig() {
-        // Return the first row, or throw if not found.
-        // Should never happen if DatabaseInitializer always inserts a row.
         return configRepository.findAll().get(0);
     }
 

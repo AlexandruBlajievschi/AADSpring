@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TermRepository extends JpaRepository<Term, Long> {
-    // Additional query methods can be defined here if needed
 }

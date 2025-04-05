@@ -21,12 +21,10 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          HttpServletResponse response,
                          AuthenticationException authException)
             throws IOException, ServletException {
-        // Log only a concise warning message
         log.warn("Unauthorized access to {}: {}", request.getRequestURI(), authException.getMessage());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
 
-        // Send a simple error message (you can also use response.sendError if preferred)
         PrintWriter writer = response.getWriter();
         writer.write("{\"error\": \"Full authentication is required to access this resource.\"}");
         writer.flush();

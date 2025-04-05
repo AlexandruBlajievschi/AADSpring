@@ -1,7 +1,6 @@
 package com.example.aadbackspring.model.stripe;
 
 import com.example.aadbackspring.model.User;
-import com.example.aadbackspring.model.stripe.SubscriptionPlan;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -6,15 +6,13 @@ import com.example.aadbackspring.model.stripe.SubscriptionPlan;
 import com.example.aadbackspring.repository.AppConfigurationRepository;
 import com.example.aadbackspring.repository.UserRepository;
 import com.example.aadbackspring.repository.stripe.SubscriptionPlanRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Value;
-import java.util.List;
 
-// Import our password encoder utility.
-import com.example.aadbackspring.config.PasswordEncoderUtil;
+import java.util.List;
 
 @Configuration
 @ConditionalOnProperty(name = "database.initializer.enabled", havingValue = "true", matchIfMissing = true)

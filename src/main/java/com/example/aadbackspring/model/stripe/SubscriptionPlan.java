@@ -45,6 +45,5 @@ public class SubscriptionPlan {
     }
 
     public SubscriptionPlan() {
-        // Required by JPA
     }
 }

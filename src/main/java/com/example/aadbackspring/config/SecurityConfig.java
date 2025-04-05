@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
 
                         // Endpoints that require authentication (but not necessarily admin):
-                        .requestMatchers("/stripe/**").authenticated()
+                        .requestMatchers("/stripe/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/articles/**", "/categories/**", "/coins/**", "/dexchanges/**", "/news/**", "/terms/**", "/users/**")
                         .authenticated()

@@ -21,7 +21,6 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // Constructor-based dependency injection
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
