@@ -20,21 +20,18 @@ public class CoinController {
         this.coinService = coinService;
     }
 
-    // CREATE
     @PostMapping
     public ResponseEntity<Coin> createCoin(@RequestBody Coin coin) {
         Coin created = coinService.createCoin(coin);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // READ ALL – Use unified service to get coin listings
     @GetMapping
     public ResponseEntity<List<Coin>> getAllCoins() {
         List<Coin> coins = coinService.getCoinListings();
         return ResponseEntity.ok(coins);
     }
 
-    // READ by ID
     @GetMapping("/{id}")
     public ResponseEntity<Coin> getCoinById(@PathVariable Long id) {
         Coin coin = coinService.getCoinById(id)
@@ -42,14 +39,12 @@ public class CoinController {
         return ResponseEntity.ok(coin);
     }
 
-    // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<Coin> updateCoin(@PathVariable Long id, @RequestBody Coin coin) {
         Coin updated = coinService.updateCoin(id, coin);
         return ResponseEntity.ok(updated);
     }
 
-    // DELETE
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCoin(@PathVariable Long id) {
         boolean deleted = coinService.deleteCoin(id);

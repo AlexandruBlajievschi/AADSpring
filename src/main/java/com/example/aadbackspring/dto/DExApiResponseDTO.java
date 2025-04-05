@@ -14,11 +14,9 @@ public class DExApiResponseDTO {
     private List<DExchange> data;
     private Status status;
 
-    // Nested Status DTO
     @Setter
     @Getter
     public static class Status {
-        // Getters and Setters
         private String timestamp;
         private String error_code;
         private String error_message;

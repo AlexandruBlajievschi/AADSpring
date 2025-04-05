@@ -75,7 +75,7 @@ public class NewsService {
             try {
                 return getNewsFromExternal();
             } catch (Exception ex) {
-                logger.warn("Falling back to local news: {}", ex.getMessage());
+                logger.warn("Falling back to local news due to unresponsiveness of the external API: {}", ex.getMessage());
                 return newsRepository.findAll();
             }
         }
@@ -125,7 +125,7 @@ public class NewsService {
         try {
             logger.info("Running scheduled task to update local news.");
             List<News> externalNews = getNewsFromExternal();
-            // Optionally clear old news:
+
             newsRepository.deleteAll();
             newsRepository.saveAll(externalNews);
             logger.info("Local news updated successfully with {} records.", externalNews.size());

@@ -10,7 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -26,7 +29,6 @@ public class DExchangeService {
     private final DExchangeRepository repository;
     private final RestTemplate restTemplate;
 
-    // External API URL for DEX listings is now in application.properties
     @Value("${external.dex.api.url}")
     private String externalDexApiUrl;
 
@@ -124,7 +126,7 @@ public class DExchangeService {
         try {
             return getDexListingsFromExternal();
         } catch (Exception ex) {  // catch all exceptions, not only ResourceNotFoundException
-            logger.warn("Falling back to local DExchange data: {}", ex.getMessage());
+            logger.warn("Falling back to local DExchange data due to unresponsiveness of the external API: {}", ex.getMessage());
             return getAllDExchanges();
         }
     }

@@ -16,7 +16,6 @@ public class News {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Increase length or use TEXT for externalId if needed
     @JsonProperty("id")
     @Column(length = 512)
     private String externalId;
@@ -36,20 +35,19 @@ public class News {
     @Column(columnDefinition = "TEXT")
     private String body;
 
-    @Column(length = 1024) // In case tags are concatenated or very descriptive.
+    @Column(length = 1024)
     private String tags;
 
     private String lang;
 
-    @Column(length = 1024) // To allow more categories if needed.
+    @Column(length = 1024)
     private String categories;
 
-    @Column(length = 1024) // In case the source name or details become longer.
+    @Column(length = 1024)
     private String source;
 
-    // Getters and setters
 
-    @JsonIgnore  // Ignore the internal database id when serializing/deserializing
+    @JsonIgnore
     public Long getId() {
         return id;
     }

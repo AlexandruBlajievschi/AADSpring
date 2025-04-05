@@ -13,7 +13,6 @@ public class CoinApiResponseDTO {
     private List<CoinData> data;
     private Status status;
 
-    // Nested DTO to map each coin's data
     @Getter
     @Setter
     public static class CoinData {
@@ -38,11 +37,9 @@ public class CoinApiResponseDTO {
         }
     }
 
-    // Optionally, include a nested Status class if you need to map status details
     @Setter
     @Getter
     public static class Status {
-        // Getters and setters
         private String timestamp;
         @JsonProperty("error_code")
         private String errorCode;
