@@ -25,8 +25,8 @@ Before running the project, make sure you have the following installed:
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/your-repository-url.git
-   cd your-repository-directory
+   git clone https://github.com/AlexandruBlajievschi/AADSpring.git
+   cd AADSpring
 
 2. Create .env file at the root of the directory with the following variables:
    <p> CMC_API_KEY=bab4713c-03bd-4f18-b7f1-ea27196f7cb7 </p>
@@ -43,3 +43,5 @@ Before running the project, make sure you have the following installed:
    <p> DEFAULT_USER_PASSWORD=user123* </p>
 
 3. From here repeat the first approach's instructions.
+
+P.S: All the credentials are test ones for you to be able to test the application.
